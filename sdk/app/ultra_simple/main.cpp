@@ -1,33 +1,12 @@
-/*
- *  RPLIDAR
- *  Ultra Simple Data Grabber Demo App
- *
- *  Copyright (c) 2009 - 2014 RoboPeak Team
- *  http://www.robopeak.com
- *  Copyright (c) 2014 - 2018 Shanghai Slamtec Co., Ltd.
- *  http://www.slamtec.com
- *
- */
-/*
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
 
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
+#include "C:\usr\include\GregUtils\strguple.h"
+#include <boost/circular_buffer.hpp>
+
+INIT_STRGUPLE
 
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
@@ -80,6 +59,54 @@ void ctrlc(int)
 {
     ctrl_c_pressed = true;
 }
+
+
+
+struct measure: _rplidar_response_measurement_node_t {
+	char temp[512];
+	
+	const char * debugPrint() {
+		sprintf(temp, "%s theta: %03.2f Dist: %08.2f Q: %d \n",
+			(sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT) ? "S " : "  ",
+			(angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f,
+			distance_q2 / 4.0f,
+			sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
+
+		return temp;
+	}
+
+	float theta() {
+		return (angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f;
+	}
+};
+
+struct RplidarReadingQueue {
+
+	float fromRadial;
+	float toRadial;
+
+	boost::circular_buffer<measure> * cb = nullptr;
+	RplidarReadingQueue(float fromRadial, float toRadial, int qSize) :fromRadial(fromRadial), toRadial(toRadial){
+		cb = new boost::circular_buffer<measure>(qSize);
+	}
+
+	void push(measure &m) {
+		
+		auto thet = m.theta();
+
+		if (thet >= fromRadial && thet <= toRadial) {
+			cb->push_back(m);
+		}
+		
+	}
+
+	~RplidarReadingQueue() {
+		if(cb)
+			delete cb;
+	}
+
+};
+
 
 int main(int argc, const char * argv[]) {
     const char * opt_com_path = NULL;
@@ -197,6 +224,9 @@ int main(int argc, const char * argv[]) {
     // start scan...
     drv->startScan(0,1);
 
+
+	char temp[512];
+
     // fetech result and print it out...
     while (1) {
         rplidar_response_measurement_node_t nodes[8192];
@@ -207,11 +237,23 @@ int main(int argc, const char * argv[]) {
         if (IS_OK(op_result)) {
             drv->ascendScanData(nodes, count);
             for (int pos = 0; pos < (int)count ; ++pos) {
-                printf("%s theta: %03.2f Dist: %08.2f Q: %d \n", 
-                    (nodes[pos].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT) ?"S ":"  ", 
-                    (nodes[pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f,
-                    nodes[pos].distance_q2/4.0f,
-                    nodes[pos].sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
+                //printf("%s theta: %03.2f Dist: %08.2f Q: %d \n", 
+                //    (nodes[pos].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT) ?"S ":"  ", 
+                //    (nodes[pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f,
+                //    nodes[pos].distance_q2/4.0f,
+                //    nodes[pos].sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
+
+				measure m = (measure&)nodes[pos];
+
+				/*sprintf(temp, "%s theta: %03.2f Dist: %08.2f Q: %d \n",
+					(nodes[pos].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT) ? "S " : "  ",
+					(nodes[pos].angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f,
+					nodes[pos].distance_q2 / 4.0f,
+					nodes[pos].sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);*/
+
+				SGUP_ODS(m.debugPrint());
+				
+
             }
         }
 
