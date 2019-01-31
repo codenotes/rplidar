@@ -5,6 +5,7 @@
 #include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
 #include "C:\usr\include\GregUtils\strguple.h"
 #include <boost/circular_buffer.hpp>
+#include <boost/thread.hpp>
 
 INIT_STRGUPLE
 
@@ -90,9 +91,12 @@ struct RplidarReadingQueue {
 	int toRadial;
 	bool keepGoing = true;
 	bool useRangeFilter = false;
+	_u32 baud;
+	char *     opt_com_path;
+	boost::thread * scanThread = nullptr;
 
 	boost::circular_buffer<measure> * cb = nullptr;
-	RplidarReadingQueue(float fromRadial, float toRadial, int qSize) :fromRadial(fromRadial), toRadial(toRadial){
+	RplidarReadingQueue(float fromRadial, float toRadial, int qSize, _u32 baud = 256000, char * opt_com_path = "\\\\.\\com3") :fromRadial(fromRadial), toRadial(toRadial),baud(baud), opt_com_path(opt_com_path){
 		cb = new boost::circular_buffer<measure>(qSize);
 	}
 
@@ -130,7 +134,12 @@ struct RplidarReadingQueue {
 			delete cb;
 	}
 
-	bool run(_u32 baud=256000, const char *     opt_com_path = "\\\\.\\com3") {
+	void stop()
+	{
+		scanThread->interrupt();
+	}
+
+	bool run() {
 		
 		_u32         baudrateArray[2] = { 115200, 256000 };
 		_u32         opt_com_baudrate = 0;
@@ -167,15 +176,24 @@ struct RplidarReadingQueue {
 
 				}
 			}
-
-			
+			try {
+				boost::this_thread::interruption_point();
+			}
+			catch (...)
+			{
+				SGUP_ODS(__FUNCTION__, "thread interrupt");
+				break;
+			}
 		}
 
 		drv->stop();
 		drv->stopMotor();
 	}
 
+	bool runThreaded() {
+		scanThread=new boost::thread(std::bind(&RplidarReadingQueue::run, this));
 
+	}
 
 };
 
@@ -185,6 +203,14 @@ int main(int argc, const char * argv[]) {
     _u32         baudrateArray[2] = {115200, 256000};
     _u32         opt_com_baudrate = 0;
     u_result     op_result;
+
+
+
+
+	RplidarReadingQueue rp(320, 60, 1000);
+	rp.runThreaded();
+
+	return 0;
 
     bool useArgcBaudrate = false;
 
