@@ -192,7 +192,7 @@ struct RplidarReadingQueue {
 
 	bool runThreaded() {
 		scanThread=new boost::thread(std::bind(&RplidarReadingQueue::run, this));
-
+		return true;
 	}
 
 };
