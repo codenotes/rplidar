@@ -62,7 +62,9 @@ void ctrlc(int)
 
 
 
-struct measure: _rplidar_response_measurement_node_t {
+
+struct RplidarReadingQueue {
+	struct measure	: _rplidar_response_measurement_node_t {
 	char temp[512];
 	
 	const char * debugPrint() {
@@ -75,28 +77,51 @@ struct measure: _rplidar_response_measurement_node_t {
 		return temp;
 	}
 
-	float theta() {
+	inline float distance() {
+		return distance_q2 / 4.0f;
+	}
+
+	inline float theta() {
 		return (angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f;
 	}
 };
 
-struct RplidarReadingQueue {
-
-	float fromRadial;
-	float toRadial;
+	int fromRadial;
+	int toRadial;
+	bool keepGoing = true;
+	bool useRangeFilter = false;
 
 	boost::circular_buffer<measure> * cb = nullptr;
 	RplidarReadingQueue(float fromRadial, float toRadial, int qSize) :fromRadial(fromRadial), toRadial(toRadial){
 		cb = new boost::circular_buffer<measure>(qSize);
 	}
 
-	void push(measure &m) {
+	RplidarReadingQueue(int size) {
+		cb = new boost::circular_buffer<measure>(size);
+	}
+
+	void setRange(int from, int to) {
+		fromRadial = from;
+		toRadial = to;
+		useRangeFilter = true;
+	}
+
+	void get(measure & m, int fromRadial, int toRadial) {
+
+	}
+
+	inline void push(measure &m) {
 		
+		if (m.distance() == 0) return;
+
 		auto thet = m.theta();
 
-		if (thet >= fromRadial && thet <= toRadial) {
+		if(useRangeFilter)
+			if (thet >= fromRadial && thet <= toRadial) {
+				cb->push_back(m);
+			}
+		else
 			cb->push_back(m);
-		}
 		
 	}
 
@@ -104,6 +129,53 @@ struct RplidarReadingQueue {
 		if(cb)
 			delete cb;
 	}
+
+	bool run(_u32 baud=256000, const char *     opt_com_path = "\\\\.\\com3") {
+		
+		_u32         baudrateArray[2] = { 115200, 256000 };
+		_u32         opt_com_baudrate = 0;
+		u_result     op_result;
+
+		RPlidarDriver * drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+		if (!drv) {
+			fprintf(stderr, "insufficent memory, exit\n");
+			return false;
+		}
+
+		drv->startMotor();
+		// start scan...
+		drv->startScan(0, 1);
+
+
+		char temp[512];
+
+		// fetech result and print it out...
+		while (keepGoing) {
+			rplidar_response_measurement_node_t nodes[8192];
+			size_t   count = _countof(nodes);
+
+			op_result = drv->grabScanData(nodes, count);
+
+			if (IS_OK(op_result)) {
+				drv->ascendScanData(nodes, count);
+				for (int pos = 0; pos < (int)count; ++pos) {
+		
+					measure m = (measure&)nodes[pos];
+					push(m);
+					SGUP_ODS(m.debugPrint());
+
+
+				}
+			}
+
+			
+		}
+
+		drv->stop();
+		drv->stopMotor();
+	}
+
+
 
 };
 
@@ -243,7 +315,7 @@ int main(int argc, const char * argv[]) {
                 //    nodes[pos].distance_q2/4.0f,
                 //    nodes[pos].sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
 
-				measure m = (measure&)nodes[pos];
+		//		measure m = (measure&)nodes[pos];
 
 				/*sprintf(temp, "%s theta: %03.2f Dist: %08.2f Q: %d \n",
 					(nodes[pos].sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT) ? "S " : "  ",
@@ -251,7 +323,7 @@ int main(int argc, const char * argv[]) {
 					nodes[pos].distance_q2 / 4.0f,
 					nodes[pos].sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);*/
 
-				SGUP_ODS(m.debugPrint());
+//				SGUP_ODS(m.debugPrint());
 				
 
             }
