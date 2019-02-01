@@ -200,7 +200,7 @@ struct RplidarReadingQueue {
 	static boost::thread * scanThread;
 
 	boost::circular_buffer<measure> * cb = nullptr;
-	RplidarReadingQueue(float fromRadial, float toRadial, int qSize, _u32 baud = 256000, char * opt_com_path = "\\\\.\\com3") :fromRadial(fromRadial), toRadial(toRadial),baud(baud), opt_com_path(opt_com_path){
+	RplidarReadingQueue(float fromRadial, float toRadial, int qSize, _u32 baud = 256000, char * opt_com_path = "\\\\.\\com3") :fromRadial(fromRadial), toRadial(toRadial),baud(baud), opt_com_path(opt_com_path), useRangeFilter(true){
 		cb = new boost::circular_buffer<measure>(qSize);
 	}
 
@@ -218,24 +218,40 @@ struct RplidarReadingQueue {
 
 	}
 
+
+	inline bool isInRange(float theta) {
+	//	float minTheta = std::min(fromRadial, toRadial);
+	//	float maxTheta = std::max(fromRadial, toRadial);
+
+		bool truth1 = (theta >= fromRadial) && (theta <= 359.99f);
+			//or
+		bool truth2 = (theta > 0.0f) && (theta <= toRadial);
+
+		
+	//	SGUP_ODS(__FUNCTION__, "from/to radials", fromRadial, toRadial, "theta:",theta, truth1,truth2,  (truth1 || truth2)?"TRUE":"FALSE"    );
+
+
+		return (truth1 || truth2);
+
+		//sweep to the right so
+		//we must be greater than minTheta up to 359.999
+
+	}
+
 	inline bool push(measure &m) {
 		
 		if (m.distance() == 0) return false;
 
 		auto thet = m.theta();
 
-		float minTheta = std::min(fromRadial, toRadial);
-		float maxTheta = std::max(fromRadial, toRadial);
-
-
-
-
 		if(useRangeFilter)
-			if (thet >= minTheta&& thet <= maxTheta) {
+			if (isInRange(thet)) {
 				cb->push_back(m);
+				SGUP_ODS("PUSH THETA:", thet);
 				return true;
 			}
 			else {
+		//		SGUP_ODS("REJECT THETA:", thet);
 				return false;
 			}
 		else
@@ -343,8 +359,12 @@ struct RplidarReadingQueue {
 				for (int pos = 0; pos < (int)count; ++pos) {
 		
 					measure m = (measure&)nodes[pos];
-					if(push(m))
-						SGUP_ODS(m.debugPrint());
+					if (push(m)) {
+					//	SGUP_ODS(m.debugPrint());
+					}
+					else {
+					//	SGUP_ODS("REJECT:", m.theta());
+					}
 
 
 				}
@@ -394,7 +414,7 @@ int main(int argc, const char * argv[]) {
 
 
 
-	RplidarReadingQueue rp(320, 60, 1000);
+	RplidarReadingQueue rp(355, 10, 1000);
 	rp.runThreaded();
 	rp.join();
 
