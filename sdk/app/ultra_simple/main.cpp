@@ -65,6 +65,11 @@ void ctrlc(int)
 
 
 struct RplidarReadingQueue {
+	struct point {
+		float x;
+		float y;
+		float z;
+	};
 	struct measure	: _rplidar_response_measurement_node_t {
 	char temp[512];
 	
@@ -80,6 +85,28 @@ struct RplidarReadingQueue {
 
 	inline float distance() {
 		return distance_q2 / 4.0f;
+	}
+
+	long double deg2rad(long double deg) {
+		return deg * 3.141592 / 180;
+	}
+
+	long double rad2deg(long double rad) {
+		return (rad / 3.141592) * 180;
+	}
+
+	inline point convToCart(float r, float theta, float omega=90.0f) {
+		point p;
+
+		float thet=deg2rad(theta);
+		float omeg=deg2rad(omega);
+
+		p.x = r * sin(thet)*cos(omeg);
+		p.y = r * sin(thet)*sin(omeg);
+		p.z = r * cos(thet);
+
+		return p;
+
 	}
 
 	inline float theta() {
