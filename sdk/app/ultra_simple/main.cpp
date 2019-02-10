@@ -1,16 +1,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <algorithm>
-#include <iostream>
-#include <numeric>
-#include <vector>
+//#include <algorithm>
+//#include <iostream>
+//#include <numeric>
+//#include <vector>
 
+#include "RplidarClass.h"
 
-#include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
-#include "C:\usr\include\GregUtils\strguple.h"
-#include <boost/circular_buffer.hpp>
-#include <boost/thread.hpp>
+//#include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
+//#include "C:\usr\include\GregUtils\strguple.h"
+//#include <boost/circular_buffer.hpp>
+//#include <boost/thread.hpp>
 
 INIT_STRGUPLE
 
@@ -32,10 +33,9 @@ static inline void delay(_word_size_t ms){
         usleep(ms*1000);
 }
 #endif
+//using rp::standalone::rplidar;
 
-using namespace rp::standalone::rplidar;
-
-bool checkRPLIDARHealth(RPlidarDriver * drv)
+bool checkRPLIDARHealth(rp::standalone::rplidar::RPlidarDriver * drv)
 {
     u_result     op_result;
     rplidar_response_device_health_t healthinfo;
@@ -108,298 +108,35 @@ void testSlope() {
 	std::cout << slope(x, y) << '\n';  // outputs 0.305556
 }
 
-struct RplidarReadingQueue {
-	struct point {
-		float x;
-		float y;
-		float z;
-	};
 
 
 
-	static std::pair<float,float> GetLinearFit(std::vector<point> pData)
-	{
-		float xSum = 0, ySum = 0, xxSum = 0, xySum = 0, slope, intercept;
-		
-	//	std::vector<float> xData;
-
-		/*for (long i = 0; i < pData.size(); i++)
-		{
-			xData.push_back(pData[i].x);
-		}*/
-		auto sz = pData.size();
-
-		for (long i = 0; i < sz; i++)
-		{
-			xSum += pData[i].x;
-			ySum += pData[i].y;
-			xxSum += pData[i].x * pData[i].x;
-			xySum += pData[i].x * pData[i].y;
-		}
-		slope = (sz * xySum - xSum * ySum) / (sz * xxSum - xSum * xSum);
-		intercept = (ySum - slope * xSum) / sz;
-		/*std::vector<float> res;
-		res.push_back(slope);
-		res.push_back(intercept);*/
-		return { slope,intercept };
-	}
-
-
-
-	struct measure	: _rplidar_response_measurement_node_t {
-	char temp[512];
-	
-	const char * debugPrint() {
-		sprintf(temp, "%s theta: %03.2f Dist: %08.2f Q: %d \n",
-			(sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT) ? "S " : "  ",
-			(angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f,
-			distance_q2 / 4.0f,
-			sync_quality >> RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT);
-
-		return temp;
-	}
-
-	inline float distance() {
-		return distance_q2 / 4.0f;
-	}
-
-	long double deg2rad(long double deg) {
-		return deg * 3.141592 / 180;
-	}
-
-	long double rad2deg(long double rad) {
-		return (rad / 3.141592) * 180;
-	}
-
-	inline point convToCart(float r, float theta, float omega=90.0f) {
-		point p;
-
-		float thet=deg2rad(theta);
-		float omeg=deg2rad(omega);
-
-		p.x = r * sin(thet)*cos(omeg);
-		p.y = r * sin(thet)*sin(omeg);
-		p.z = r * cos(thet);
-
-		return p;
-
-	}
-
-	inline float theta() {
-		return (angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f;
-	}
-};
-
-	float fromRadial;
-	float toRadial;
-	bool keepGoing = true;
-	bool useRangeFilter = false;
-	_u32 baud;
-	RPlidarDriver * drv = nullptr;
-	char *     opt_com_path;
-	static boost::thread * scanThread;
-
-	boost::circular_buffer<measure> * cb = nullptr;
-	RplidarReadingQueue(float fromRadial, float toRadial, int qSize, _u32 baud = 256000, char * opt_com_path = "\\\\.\\com3") :fromRadial(fromRadial), toRadial(toRadial),baud(baud), opt_com_path(opt_com_path), useRangeFilter(true){
-		cb = new boost::circular_buffer<measure>(qSize);
-	}
-
-	RplidarReadingQueue(int size) {
-		cb = new boost::circular_buffer<measure>(size);
-	}
-
-	void setRange(int from, int to) {
-		fromRadial = from;
-		toRadial = to;
-		useRangeFilter = true;
-	}
-
-	void get(measure & m, int fromRadial, int toRadial) {
-
-	}
-
-
-	inline bool isInRange(float theta) {
-	//	float minTheta = std::min(fromRadial, toRadial);
-	//	float maxTheta = std::max(fromRadial, toRadial);
-
-		bool truth1 = (theta >= fromRadial) && (theta <= 359.99f);
-			//or
-		bool truth2 = (theta > 0.0f) && (theta <= toRadial);
-
-		
-	//	SGUP_ODS(__FUNCTION__, "from/to radials", fromRadial, toRadial, "theta:",theta, truth1,truth2,  (truth1 || truth2)?"TRUE":"FALSE"    );
-
-
-		return (truth1 || truth2);
-
-		//sweep to the right so
-		//we must be greater than minTheta up to 359.999
-
-	}
-
-	inline bool push(measure &m) {
-		
-		if (m.distance() == 0) return false;
-
-		auto thet = m.theta();
-
-		if(useRangeFilter)
-			if (isInRange(thet)) {
-				cb->push_back(m);
-				SGUP_ODS("PUSH THETA:", thet);
-				return true;
-			}
-			else {
-		//		SGUP_ODS("REJECT THETA:", thet);
-				return false;
-			}
-		else
-			cb->push_back(m);
-
-		return true;
-		
-	}
-
-	~RplidarReadingQueue() {
-		if(cb)
-			delete cb;
-	}
-
-	void stop()
-	{
-		scanThread->interrupt();
-	}
-
-	static void ctrlc(int)
-	{
-		SGUP_ODS("interrupt handler ctrl-c");
-
-		ctrl_c_pressed = true;
-		scanThread->interrupt();
-	}
-
-
-	bool initLidat() {
-
-		_u32         baudrateArray[2] = { 115200, 256000 };
-		_u32         opt_com_baudrate = 0;
-		u_result     op_result;
-
-		if (!drv )
-			drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
-
-		if (!drv) {
-			SGUP_ODS( "insufficent memory, exit");
-			return false;
-		}
-
-
-		rplidar_response_device_info_t devinfo;
-		bool connectSuccess = false;
-		// make connection...
-	
-		if (!drv)
-			drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
-		if (IS_OK(drv->connect(opt_com_path, baud)))
-		{
-			auto op_result = drv->getDeviceInfo(devinfo);
-
-			if (IS_OK(op_result))
-			{
-				connectSuccess = true;
-				SGUP_ODS("connect lidar successful");
-			}
-			else
-			{
-				SGUP_ODS("failure to connect lidar.");
-				delete drv;
-				drv = NULL;
-				
-			}
-		}
-		
-	
-		if (!connectSuccess) {
-			SGUP_ODS("Error, cannot bind to the specified serial port",  opt_com_path);
-			return false;
-		}
-	
-		SGUP_ODS("Firmware Ver: %d.%02d\n", devinfo.firmware_version >> 8
-			, devinfo.firmware_version & 0xFF,
-			"Hardware Rev: %d\n",  (int)devinfo.hardware_version);
-		
-		
-		return true;
-	}
-
-	bool run() {
-		
-		signal(SIGINT, ctrlc );
-
-		if (!initLidat()) return false;
-	
-
-		drv->startMotor();
-		// start scan...
-		drv->startScan(0, 1);
-
-
-		char temp[512];
-		
-		// fetech result and print it out...
-		while (keepGoing) {
-			rplidar_response_measurement_node_t nodes[8192];
-			size_t   count = _countof(nodes);
-
-			auto op_result = drv->grabScanData(nodes, count);
-
-			if (IS_OK(op_result)) {
-				drv->ascendScanData(nodes, count);
-				for (int pos = 0; pos < (int)count; ++pos) {
-		
-					measure m = (measure&)nodes[pos];
-					if (push(m)) {
-					//	SGUP_ODS(m.debugPrint());
-					}
-					else {
-					//	SGUP_ODS("REJECT:", m.theta());
-					}
-
-
-				}
-			}
-			try {
-				boost::this_thread::interruption_point();
-			}
-			catch (...)
-			{
-				SGUP_ODS(__FUNCTION__, "thread interrupt");
-				break;
-			}
-		}
-
-		SGUP_ODS("Stopping scan and motor");
-
-		drv->stop();
-		drv->stopMotor();
-	}
-
-	bool runThreaded() {
-		scanThread=new boost::thread(std::bind(&RplidarReadingQueue::run, this));
-		return true;
-	}
-
-	void join() {
-		scanThread->join();
-	}
-
-};
 #define INIT_RPLIDAR boost::thread * RplidarReadingQueue::scanThread=nullptr;
 
 using namespace std;
 
-INIT_RPLIDAR
+RplidarReadingQueue * grp = nullptr;
+
+
+
+
+void startLidar(float fromRadial, float toRadial, int qSize) {
+
+	if(grp!=nullptr)
+		grp=new RplidarReadingQueue( fromRadial,  toRadial,  qSize);
+	
+	grp->runThreaded();
+//	rp.join();
+}
+
+void stopLidar(float fromRadial, float toRadial, int qSize) {
+
+	grp->stop();
+
+}
+
+
+//using rp::standalone::rplidar;
 
 int main(int argc, const char * argv[]) {
     const char * opt_com_path = NULL;
@@ -445,7 +182,7 @@ int main(int argc, const char * argv[]) {
     }
 
     // create the driver instance
-	RPlidarDriver * drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+	rp::standalone::rplidar::RPlidarDriver * drv = rp::standalone::rplidar::RPlidarDriver::CreateDriver(rp::standalone::rplidar::DRIVER_TYPE_SERIALPORT);
     if (!drv) {
         fprintf(stderr, "insufficent memory, exit\n");
         exit(-2);
@@ -457,7 +194,7 @@ int main(int argc, const char * argv[]) {
     if(useArgcBaudrate)
     {
         if(!drv)
-            drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+            drv = rp::standalone::rplidar::RPlidarDriver::CreateDriver(rp::standalone::rplidar::DRIVER_TYPE_SERIALPORT);
         if (IS_OK(drv->connect(opt_com_path, opt_com_baudrate)))
         {
             op_result = drv->getDeviceInfo(devinfo);
@@ -479,7 +216,7 @@ int main(int argc, const char * argv[]) {
         for(size_t i = 0; i < baudRateArraySize; ++i)
         {
             if(!drv)
-                drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+                drv = rp::standalone::rplidar::RPlidarDriver::CreateDriver(rp::standalone::rplidar::DRIVER_TYPE_SERIALPORT);
             if(IS_OK(drv->connect(opt_com_path, baudrateArray[i])))
             {
                 op_result = drv->getDeviceInfo(devinfo);
@@ -572,7 +309,7 @@ int main(int argc, const char * argv[]) {
     drv->stopMotor();
     // done!
 on_finished:
-    RPlidarDriver::DisposeDriver(drv);
+	rp::standalone::rplidar::RPlidarDriver::DisposeDriver(drv);
     drv = NULL;
     return 0;
 }
