@@ -26,8 +26,22 @@ void RplidarReadingQueue::setRange(int from, int to)
 	useRangeFilter = true;
 }
 
-void RplidarReadingQueue::get(rp::measure & m, int fromRadial, int toRadial)
+int RplidarReadingQueue::getFromTo(rp::measure & m, int fromRadial, int toRadial)
 {
+	boost::mutex::scoped_lock lock(qMutex);
+	return -1;
+}
+
+int RplidarReadingQueue::getFront(rp::measure & m)
+{
+	boost::mutex::scoped_lock lock(qMutex);
+
+	if (cb->empty())
+		return 0;
+
+	m = cb->front();
+
+	return cb->size();
 
 }
 
@@ -52,6 +66,8 @@ bool RplidarReadingQueue::isInRange(float theta)
 
 bool RplidarReadingQueue::push(rp::measure &m)
 {
+	boost::mutex::scoped_lock lock(qMutex);
+
 	if (m.distance() == 0) return false;
 
 	auto thet = m.theta();
@@ -59,7 +75,7 @@ bool RplidarReadingQueue::push(rp::measure &m)
 	if (useRangeFilter)
 		if (isInRange(thet)) {
 			cb->push_back(m);
-			SGUP_ODS("PUSH THETA:", thet);
+		//	SGUP_ODS("PUSH THETA:", thet);
 			return true;
 		}
 		else {
@@ -80,10 +96,16 @@ RplidarReadingQueue::~RplidarReadingQueue()
 
 void RplidarReadingQueue::stop()
 {
+	SGUP_ODS(__FUNCTION__)
+		keepGoing = false;
 	scanThread->interrupt();
 }
 
 
+rp::enumLidarStatus RplidarReadingQueue::getLidarStatus()
+{
+	return lidarStatus;
+}
 
 bool RplidarReadingQueue::initLidat()
 {
@@ -91,6 +113,12 @@ bool RplidarReadingQueue::initLidat()
 	_u32         opt_com_baudrate = 0;
 	u_result     op_result;
 	using namespace rp::standalone::rplidar;
+	keepGoing = true;
+
+//	opt_com_baudrate = baud;
+
+
+	SGUP_ODS(__FUNCTION__)
 
 	if (!drv)
 		drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
@@ -142,19 +170,23 @@ bool RplidarReadingQueue::initLidat()
 bool RplidarReadingQueue::run()
 {
 	//		signal(SIGINT, ctrlc);
+	SGUP_ODS(__FUNCTION__)
 
 	if (!initLidat()) return false;
 
+	SGUP_ODS(__FUNCTION__, "initdat worked?")
 
 	drv->startMotor();
 	// start scan...
 	drv->startScan(0, 1);
 
+	lidarStatus = rp::STARTED;
 
 	char temp[512];
+	SGUP_ODS(__FUNCTION__, "keepgoing:", keepGoing);
 
 	// fetech result and print it out...
-	while (keepGoing) {
+	while (keepGoing && lidarStatus==rp::STARTED) {
 		rplidar_response_measurement_node_t nodes[8192];
 		size_t   count = _countof(nodes);
 
@@ -181,18 +213,25 @@ bool RplidarReadingQueue::run()
 		catch (...)
 		{
 			SGUP_ODS(__FUNCTION__, "thread interrupt");
+
+			SGUP_ODS("Stopping scan and motor");
+
+			drv->stop();
+			drv->stopMotor();
+
+			lidarStatus = rp::STOPPED;
 			break;
 		}
 	}
 
-	SGUP_ODS("Stopping scan and motor");
-
-	drv->stop();
-	drv->stopMotor();
 }
+
+
 
 bool RplidarReadingQueue::runThreaded()
 {
+	SGUP_ODS(__FUNCTION__)
+
 	scanThread = new boost::thread(std::bind(&RplidarReadingQueue::run, this));
 	return true;
 }

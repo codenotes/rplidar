@@ -165,12 +165,18 @@
     <ClCompile Include="..\..\..\app\ultra_simple\RplidarClass.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\rplidarReader\rplidarReader.vcxproj">
+      <Project>{f4f7848d-c674-40d6-bfad-fb342444b84a}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\rplidar_driver\rplidar_driver.vcxproj">
       <Project>{1f0aa469-8a8f-4ada-931d-967d2c5996df}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\app\ultra_simple\RplidarClass.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\app\ultra_simple\RPlidarNeedfullsForDLL" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

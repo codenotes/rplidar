@@ -13,7 +13,7 @@
 //#include <boost/circular_buffer.hpp>
 //#include <boost/thread.hpp>
 
-INIT_STRGUPLE
+
 
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
@@ -137,6 +137,53 @@ void stopLidar(float fromRadial, float toRadial, int qSize) {
 
 
 //using rp::standalone::rplidar;
+template <typename T>
+struct TypeParser {};
+
+template <typename Ret, typename... Args>
+struct TypeParser<Ret(Args...)> {
+	static std::function<Ret(Args...)> createFunction(const FARPROC lpfnGetProcessID) {
+		return std::function<Ret(Args...)>(reinterpret_cast<Ret(__stdcall *)(Args...)>(lpfnGetProcessID));
+	}
+};
+
+template <typename T>
+std::function<T> loadDllFunc(const std::string& dllName, const std::string& funcName, HINSTANCE hGetProcIDDLL=NULL) {
+	// Load DLL.
+	
+	if (!hGetProcIDDLL) {
+		HINSTANCE hGetProcIDDLL = LoadLibrary(dllName.c_str());
+
+		// Check if DLL is loaded.
+		if (hGetProcIDDLL == NULL) {
+			std::cerr << "Could not load DLL \"" << dllName << "\"" << std::endl;
+			//exit(EXIT_FAILURE);
+		}
+	}
+
+	// Locate function in DLL.
+	FARPROC lpfnGetProcessID = GetProcAddress(hGetProcIDDLL, funcName.c_str());
+
+	// Check if function was located.
+	if (!lpfnGetProcessID) {
+		std::cerr << "Could not locate the function \"" << funcName << "\" in DLL\"" << dllName << "\"" << std::endl;
+	//	exit(EXIT_FAILURE);
+	}
+
+	// Create function object from function pointer.
+	return TypeParser<T>::createFunction(lpfnGetProcessID);
+}
+
+inline bool isKeyDown(int keyCode)
+{
+	return ((GetAsyncKeyState(keyCode) & 0x8000) ? 1 : 0);
+};
+
+inline bool isKeyUp(int keyCode)
+{
+	return ((GetAsyncKeyState(keyCode) & 0x8000) ? 0 : 1);
+};
+
 
 int main(int argc, const char * argv[]) {
     const char * opt_com_path = NULL;
@@ -144,8 +191,45 @@ int main(int argc, const char * argv[]) {
     _u32         opt_com_baudrate = 0;
     u_result     op_result;
 
+	std::string dllloc = R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)";
 
 
+	HMODULE h=LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)");
+	auto proc=GetProcAddress(h, "StartLidar");
+
+	//auto fnTest = std::function<int(void)>(proc);
+	auto fnTest = loadDllFunc<int(void)>(dllloc.c_str(), "test");
+
+	//cout << fnTest() << endl;
+	
+	auto fnStart = loadDllFunc<int(float, float, int)>(dllloc.c_str(), "StartLidar",h);
+	auto fnGet = loadDllFunc<int(rp::measure&)>(dllloc.c_str(), "GetMeasure",h);
+	auto fnStop = loadDllFunc<int(void)>(dllloc.c_str(), "StopLidar",h);
+	auto fnGetLidarStatus = loadDllFunc<rp::enumLidarStatus(void)>(dllloc.c_str(), "GetLidarStatus", h);
+	
+	cout << "starting lidar, press escape to quit reading" << endl;
+
+	fnStart(355, 10, 1000) ;
+	rp::measure m;
+	int cnt;
+
+	while (1) {
+		cnt = fnGet(m);
+		if(cnt!=-1)
+			cout << "count:" << cnt << "\t " << m.debugPrint() << endl;
+
+		if (isKeyDown(VK_ESCAPE)) {
+			cout << "escape pressed, shutting down..." << endl;
+			break;
+		}
+	}
+
+	
+	cout << "Waiting for reported shutdown..." << endl;
+	fnStop();
+	   	
+
+	return 0;
 //	auto res=RplidarReadingQueue::GetLinearFit({ {1,10},{2,11},{3,10},{4,11} });
 //	cout << res.first << " " << res.second << endl;
 

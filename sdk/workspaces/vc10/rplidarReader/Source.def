@@ -2,3 +2,6 @@ LIBRARY      "%ProjectName%.DLL"
 
 EXPORTS
 test 
+StartLidar
+StopLidar
+GetLidarStatus
