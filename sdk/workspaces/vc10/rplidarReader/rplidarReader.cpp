@@ -5,6 +5,9 @@
 
 #include "..\ultra_simple\RplidarClass.h"
 
+#define DLL_EXPORT __declspec(dllexport)
 
- 
-
+extern "C"
+{
+	DLL_EXPORT void test(void) {};
+}

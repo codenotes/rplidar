@@ -1,0 +1,4 @@
+LIBRARY      "%ProjectName%.DLL"
+
+EXPORTS
+test 
