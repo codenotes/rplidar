@@ -50,3 +50,19 @@ namespace rp {
 		float theta();
 	};
 }
+
+#ifndef DLL_EXPORT
+#pragma message "DLL_EXPORT not defined"
+#define DLL_EXPORT
+
+#endif
+extern "C"
+{
+	DLL_EXPORT int  test(void);
+	DLL_EXPORT int StartLidar(float fromRadial, float toRadial, int qSize);
+
+	DLL_EXPORT int StopLidar(void);
+	DLL_EXPORT int GetMeasure(rp::measure &m);
+	DLL_EXPORT rp::enumLidarStatus GetLidarStatus();
+
+}e

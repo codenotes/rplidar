@@ -189,10 +189,10 @@ int main(int argc, const char * argv[]) {
     const char * opt_com_path = NULL;
     _u32         baudrateArray[2] = {115200, 256000};
     _u32         opt_com_baudrate = 0;
-    u_result     op_result;
+    u_result     op_result; 
 
 	std::string dllloc = R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)";
-
+	 
 
 	HMODULE h=LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)");
 	auto proc=GetProcAddress(h, "StartLidar");

@@ -27,8 +27,8 @@
 //	struct thread;
 //}
 //		
-#include "RPlidarNeedfullsForDLL.h"
 
+#include "C:/usr/include/rplidar/RPlidarNeedfullsForDLL.h"
 
 
 

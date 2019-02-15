@@ -5,7 +5,7 @@
 
 #include "..\ultra_simple\RplidarClass.h"
 
-#define DLL_EXPORT __declspec(dllexport)
+//#define DLL_EXPORT __declspec(dllexport)
 
 RplidarReadingQueue * gpRPInstance = nullptr;
 
@@ -17,6 +17,16 @@ extern "C"
 
 		if (gpRPInstance == nullptr)
 			gpRPInstance = new RplidarReadingQueue(fromRadial, toRadial, qSize);
+
+		gpRPInstance->runThreaded();
+		return 0;
+	}
+
+	DLL_EXPORT int StartLidarWithParams(float fromRadial, float toRadial, int qSize, int baud, const char* comport) {
+		SGUP_ODS(__FUNCTION__)
+
+			if (gpRPInstance == nullptr)
+				gpRPInstance = new RplidarReadingQueue(fromRadial, toRadial, qSize,baud, (char*)comport);
 
 		gpRPInstance->runThreaded();
 		return 0;
