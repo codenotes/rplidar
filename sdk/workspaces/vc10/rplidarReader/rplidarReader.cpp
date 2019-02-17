@@ -11,7 +11,7 @@ RplidarReadingQueue * gpRPInstance = nullptr;
 
 extern "C"
 {
-	DLL_EXPORT int  test(void) { return 45; };
+	DLL_EXPORT int  test(void) { return 42; }
 	DLL_EXPORT int StartLidar(float fromRadial, float toRadial, int qSize){
 		SGUP_ODS(__FUNCTION__)
 

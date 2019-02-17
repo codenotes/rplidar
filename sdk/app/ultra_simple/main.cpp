@@ -148,31 +148,25 @@ struct TypeParser<Ret(Args...)> {
 };
 
 template <typename T>
-std::function<T> loadDllFunc(const std::string& dllName, const std::string& funcName, HINSTANCE hGetProcIDDLL=NULL) {
+std::function<T> loadDllFunc(const std::string& funcName, HINSTANCE hGetProcIDDLL) {
 	// Load DLL.
-	
-	if (!hGetProcIDDLL) {
-		HINSTANCE hGetProcIDDLL = LoadLibrary(dllName.c_str());
 
-		// Check if DLL is loaded.
-		if (hGetProcIDDLL == NULL) {
-			std::cerr << "Could not load DLL \"" << dllName << "\"" << std::endl;
-			//exit(EXIT_FAILURE);
-		}
-	}
 
 	// Locate function in DLL.
 	FARPROC lpfnGetProcessID = GetProcAddress(hGetProcIDDLL, funcName.c_str());
 
 	// Check if function was located.
 	if (!lpfnGetProcessID) {
-		std::cerr << "Could not locate the function \"" << funcName << "\" in DLL\"" << dllName << "\"" << std::endl;
-	//	exit(EXIT_FAILURE);
+		//std::cerr << "Could not locate the function \"" << funcName << "\" in DLL\"" << dllName << "\"" << std::endl;
+		SGUP_ODS(__FUNCTION__, "function could not be loaded or dll does not exist and could not be loaded");
+		return NULL;
+		//	exit(EXIT_FAILURE);
 	}
 
 	// Create function object from function pointer.
 	return TypeParser<T>::createFunction(lpfnGetProcessID);
 }
+
 
 inline bool isKeyDown(int keyCode)
 {
@@ -184,6 +178,7 @@ inline bool isKeyUp(int keyCode)
 	return ((GetAsyncKeyState(keyCode) & 0x8000) ? 0 : 1);
 };
 
+INIT_RP_RPLIDAR_PROXY
 
 int main(int argc, const char * argv[]) {
     const char * opt_com_path = NULL;
@@ -198,23 +193,31 @@ int main(int argc, const char * argv[]) {
 	auto proc=GetProcAddress(h, "StartLidar");
 
 	//auto fnTest = std::function<int(void)>(proc);
-	auto fnTest = loadDllFunc<int(void)>(dllloc.c_str(), "test");
+	auto fnTest = loadDllFunc<int(void)>( "test",h);
 
 	//cout << fnTest() << endl;
 	
-	auto fnStart = loadDllFunc<int(float, float, int)>(dllloc.c_str(), "StartLidar",h);
-	auto fnGet = loadDllFunc<int(rp::measure&)>(dllloc.c_str(), "GetMeasure",h);
-	auto fnStop = loadDllFunc<int(void)>(dllloc.c_str(), "StopLidar",h);
-	auto fnGetLidarStatus = loadDllFunc<rp::enumLidarStatus(void)>(dllloc.c_str(), "GetLidarStatus", h);
+
+	//auto fnStart = loadDllFunc<int(float, float, int)>(dllloc.c_str(), "StartLidar",h);
+	//auto fnGet = loadDllFunc<int(rp::measure&)>(dllloc.c_str(), "GetMeasure",h);
+	//auto fnStop = loadDllFunc<int(void)>(dllloc.c_str(), "StopLidar",h);
+	//auto fnGetLidarStatus = loadDllFunc<rp::enumLidarStatus(void)>(dllloc.c_str(), "GetLidarStatus", h);
 	
+	rp::RplidarProxy::fnStartLidar = loadDllFunc<rp::RplidarProxy::StartLidarT>("StartLidar", h);
+	rp::RplidarProxy::fnGetMeasure = loadDllFunc<rp::RplidarProxy::GetMeasureT>("GetMeasure", h);
+	rp::RplidarProxy::fnStopLidar = loadDllFunc<rp::RplidarProxy::StopLidarT>("StopLidar", h);
+	rp::RplidarProxy::fnGetLidarStatus = loadDllFunc<rp::RplidarProxy::GetLidarStatusT>("GetLidarStatus", h);
+
 	cout << "starting lidar, press escape to quit reading" << endl;
 
-	fnStart(355, 10, 1000) ;
+	rp::RplidarProxy::fnStartLidar(355, 10, 1000) ;
 	rp::measure m;
 	int cnt;
 
+	using  rp::RplidarProxy;
+
 	while (1) {
-		cnt = fnGet(m);
+		cnt = rp::RplidarProxy::fnGetMeasure(m);
 		if(cnt!=-1)
 			cout << "count:" << cnt << "\t " << m.debugPrint() << endl;
 
@@ -226,7 +229,7 @@ int main(int argc, const char * argv[]) {
 
 	
 	cout << "Waiting for reported shutdown..." << endl;
-	fnStop();
+	rp::RplidarProxy::fnStopLidar();
 	   	
 
 	return 0;

@@ -257,6 +257,8 @@ float rp::measure::distance()
 	return distance_q2 / 4.0f;
 }
 
+
+
 long double rp::measure::deg2rad(long double deg)
 {
 	return deg * 3.141592 / 180;
