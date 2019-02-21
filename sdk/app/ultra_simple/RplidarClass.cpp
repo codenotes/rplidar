@@ -9,7 +9,8 @@
 INIT_RPLIDAR
 INIT_STRGUPLE
 
-RplidarReadingQueue::RplidarReadingQueue(float fromRadial, float toRadial, int qSize, _u32 baud /*= 256000*/, char * opt_com_path /*= "\\\\.\\com3"*/) :fromRadial(fromRadial), toRadial(toRadial), baud(baud), opt_com_path(opt_com_path), useRangeFilter(true)
+RplidarReadingQueue::RplidarReadingQueue(float fromRadial, float toRadial, int qSize,
+	_u32 baud /*= 256000*/, char * opt_com_path /*= "\\\\.\\com3"*/) :fromRadial(fromRadial), toRadial(toRadial), baud(baud), opt_com_path(opt_com_path), useRangeFilter(true)
 {
 	cb = new boost::circular_buffer<rp::measure>(qSize);
 }
@@ -23,6 +24,11 @@ void RplidarReadingQueue::setRange(int from, int to)
 {
 	fromRadial = from;
 	toRadial = to;
+
+	if (from == to) {
+		useRangeFilter = false;
+	}
+	else
 	useRangeFilter = true;
 }
 

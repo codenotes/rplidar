@@ -207,10 +207,11 @@ int main(int argc, const char * argv[]) {
 	rp::RplidarProxy::fnGetMeasure = loadDllFunc<rp::RplidarProxy::GetMeasureT>("GetMeasure", h);
 	rp::RplidarProxy::fnStopLidar = loadDllFunc<rp::RplidarProxy::StopLidarT>("StopLidar", h);
 	rp::RplidarProxy::fnGetLidarStatus = loadDllFunc<rp::RplidarProxy::GetLidarStatusT>("GetLidarStatus", h);
+	rp::RplidarProxy::fnStartLidarWithParams = loadDllFunc<rp::RplidarProxy::StartLidarWithParamsT>("StartLidarWithParams", h);
 
 	cout << "starting lidar, press escape to quit reading" << endl;
 
-	rp::RplidarProxy::fnStartLidar(355, 10, 1000) ;
+	rp::RplidarProxy::fnStartLidarWithParams(355, 10, 1000, 256000, "COM3") ;
 	rp::measure m;
 	int cnt;
 

@@ -18,15 +18,18 @@ extern "C"
 		if (gpRPInstance == nullptr)
 			gpRPInstance = new RplidarReadingQueue(fromRadial, toRadial, qSize);
 
+		gpRPInstance->setRange(fromRadial, toRadial);
 		gpRPInstance->runThreaded();
 		return 0;
 	}
 
-	DLL_EXPORT int StartLidarWithParams(float fromRadial, float toRadial, int qSize, int baud, const char* comport) {
+	DLL_EXPORT int StartLidarWithParams(float fromRadial, float toRadial, int qSize,
+		int baud,  char* comport) {
 		SGUP_ODS(__FUNCTION__)
 
 			if (gpRPInstance == nullptr)
-				gpRPInstance = new RplidarReadingQueue(fromRadial, toRadial, qSize,baud, (char*)comport);
+				gpRPInstance = new RplidarReadingQueue(fromRadial, toRadial, qSize,baud,
+				(char*)comport);
 
 		gpRPInstance->runThreaded();
 		return 0;
