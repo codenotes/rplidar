@@ -5,6 +5,7 @@
 //#include "C:\usr\include\GregUtils\strguple.h"
 //#include <boost/circular_buffer.hpp>
 //#include <boost/thread.hpp>
+#include "windows.h"
 
 INIT_RPLIDAR
 INIT_STRGUPLE
@@ -12,6 +13,7 @@ INIT_STRGUPLE
 RplidarReadingQueue::RplidarReadingQueue(float fromRadial, float toRadial, int qSize,
 	_u32 baud /*= 256000*/, char * opt_com_path /*= "\\\\.\\com3"*/) :fromRadial(fromRadial), toRadial(toRadial), baud(baud), opt_com_path(opt_com_path), useRangeFilter(true)
 {
+	SGUP_ODSA(__FUNCTION__, "COMPORT RECEIVED:", opt_com_path)
 	cb = new boost::circular_buffer<rp::measure>(qSize);
 }
 
@@ -96,8 +98,21 @@ bool RplidarReadingQueue::push(rp::measure &m)
 
 RplidarReadingQueue::~RplidarReadingQueue()
 {
+	
+	
 	if (cb)
 		delete cb;
+	
+	if(drv)
+		delete drv;
+	//drv->disconnect();
+	//drv->DisposeDriver(drv);
+
+//	RPlidarDriver::DisposeDriver(drv);
+	
+	drv = nullptr;
+	
+	
 }
 
 void RplidarReadingQueue::stop()
@@ -122,12 +137,14 @@ bool RplidarReadingQueue::initLidat()
 	keepGoing = true;
 
 //	opt_com_baudrate = baud;
+	SGUP_ODSA(__FUNCTION__, "COMPORT RECEIVED:", opt_com_path)
 
+	
 
-	SGUP_ODS(__FUNCTION__)
-
-	if (!drv)
-		drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+		if (!drv) {
+			SGUP_ODS(__FUNCTION__,"attempting to create LIDAR driver on serial port.")
+			drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+		}
 
 	if (!drv) {
 		SGUP_ODS("insufficent memory, exit");
@@ -141,7 +158,7 @@ bool RplidarReadingQueue::initLidat()
 
 	if (!drv)
 		drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
-	if (IS_OK(drv->connect(opt_com_path, baud)))
+	if (IS_OK(drv->connect(opt_com_path.c_str(), baud)))
 	{
 		auto op_result = drv->getDeviceInfo(devinfo);
 
@@ -176,7 +193,8 @@ bool RplidarReadingQueue::initLidat()
 bool RplidarReadingQueue::run()
 {
 	//		signal(SIGINT, ctrlc);
-	SGUP_ODS(__FUNCTION__)
+	//SGUP_ODS(__FUNCTION__)
+	SGUP_ODS(__FUNCTION__, "COMPORT RECEIVED:", opt_com_path)
 
 	if (!initLidat()) return false;
 
@@ -236,7 +254,8 @@ bool RplidarReadingQueue::run()
 
 bool RplidarReadingQueue::runThreaded()
 {
-	SGUP_ODS(__FUNCTION__)
+	//SGUP_ODS(__FUNCTION__)
+	SGUP_ODSA(__FUNCTION__, "COMPORT RECEIVED:", opt_com_path)
 
 	scanThread = new boost::thread(std::bind(&RplidarReadingQueue::run, this));
 	return true;
@@ -258,38 +277,7 @@ const char * rp::measure::debugPrint()
 	return temp;
 }
 
-float rp::measure::distance()
-{
-	return distance_q2 / 4.0f;
-}
 
 
 
-long double rp::measure::deg2rad(long double deg)
-{
-	return deg * 3.141592 / 180;
-}
 
-long double rp::measure::rad2deg(long double rad)
-{
-	return (rad / 3.141592) * 180;
-}
-
-rp::point rp::measure::convToCart(float r, float theta, float omega /*= 90.0f*/)
-{
-	point p;
-
-	float thet = deg2rad(theta);
-	float omeg = deg2rad(omega);
-
-	p.x = r * sin(thet)*cos(omeg);
-	p.y = r * sin(thet)*sin(omeg);
-	p.z = r * cos(thet);
-
-	return p;
-}
-
-float rp::measure::theta()
-{
-	return (angle_q6_checkbit >> RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT) / 64.0f;
-}

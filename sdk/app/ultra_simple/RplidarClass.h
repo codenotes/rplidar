@@ -78,7 +78,7 @@ struct RplidarReadingQueue {
 	bool useRangeFilter = false;
 	_u32 baud;
 	rp::standalone::rplidar::RPlidarDriver * drv = nullptr;
-	char *     opt_com_path;
+	std::string     opt_com_path;
 	static boost::thread * scanThread;
 	boost::mutex qMutex;
 

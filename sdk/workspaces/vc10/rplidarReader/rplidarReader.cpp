@@ -29,7 +29,9 @@ extern "C"
 
 			if (gpRPInstance == nullptr)
 				gpRPInstance = new RplidarReadingQueue(fromRadial, toRadial, qSize,baud,
-				(char*)comport);
+				comport);
+
+		SGUP_ODSA(__FUNCTION__,"COMPORT RECEIVED:", comport)
 
 		gpRPInstance->runThreaded();
 		return 0;
@@ -46,7 +48,12 @@ extern "C"
 		//		SGUP_ODS(__FUNCTION__, "waiting until status becomes stopped!")
 			}
 
-			SGUP_ODS(__FUNCTION__,"status is STOPPED")
+			SGUP_ODS(__FUNCTION__, "status is STOPPED")
+
+
+			
+			
+
 
 			delete gpRPInstance;
 			gpRPInstance = nullptr;
