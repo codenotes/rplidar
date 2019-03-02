@@ -6,3 +6,5 @@ StartLidar
 StopLidar
 GetLidarStatus
 StartLidarWithParams
+GetScan
+DestroyScan

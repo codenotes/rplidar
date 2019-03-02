@@ -6,6 +6,8 @@
 //#include <boost/circular_buffer.hpp>
 //#include <boost/thread.hpp>
 #include "windows.h"
+#include <chrono>
+#include <thread>
 
 INIT_RPLIDAR
 INIT_STRGUPLE
@@ -36,13 +38,13 @@ void RplidarReadingQueue::setRange(int from, int to)
 
 int RplidarReadingQueue::getFromTo(rp::measure & m, int fromRadial, int toRadial)
 {
-	boost::mutex::scoped_lock lock(qMutex);
+	//boost::mutex::scoped_lock lock(qMutex);
 	return -1;
 }
 
 int RplidarReadingQueue::getFront(rp::measure & m)
 {
-	boost::mutex::scoped_lock lock(qMutex);
+	//boost::mutex::scoped_lock lock(qMutex);
 
 	if (cb->empty())
 		return 0;
@@ -72,9 +74,20 @@ bool RplidarReadingQueue::isInRange(float theta)
 	//we must be greater than minTheta up to 359.999
 }
 
+//boost::mutex boobs;
+
+
+
 bool RplidarReadingQueue::push(rp::measure &m)
 {
-	boost::mutex::scoped_lock lock(qMutex);
+//	boost::mutex::scoped_lock lock(qMutex);
+	//SGUP_ODS(__FUNCTION__, "acquiring lock")
+
+	auto fnConv=[&](_u16 angle, _u16 dist) {
+		auto p = rp::measure::convertAngleDist(angle, dist);
+		auto tkey = roundf(p.first * 10) / 10;
+		storedRead[tkey] = p.second;
+	};
 
 	if (m.distance() == 0) return false;
 
@@ -82,18 +95,96 @@ bool RplidarReadingQueue::push(rp::measure &m)
 
 	if (useRangeFilter)
 		if (isInRange(thet)) {
+		//	OutputDebugStringA(__FUNCTION__ " start");
+			qMutex.lock();
 			cb->push_back(m);
+
+			fnConv(m.angle_q6_checkbit, m.distance_q2);
+
+			//storedRead[m.angle_q6_checkbit] = m.distance_q2;
+	//		OutputDebugStringA(__FUNCTION__ " end");
+			qMutex.unlock();
 		//	SGUP_ODS("PUSH THETA:", thet);
+	
 			return true;
 		}
 		else {
 			//		SGUP_ODS("REJECT THETA:", thet);
+		
 			return false;
 		}
-	else
+	else {
+//		OutputDebugStringA(__FUNCTION__ " start 2");
+		qMutex.lock();
 		cb->push_back(m);
+		fnConv(m.angle_q6_checkbit, m.distance_q2);
+		//storedRead[m.theta()] = m.distance();
+	//	storedRead[m.angle_q6_checkbit] = m.distance_q2;
+		qMutex.unlock();
+	//	OutputDebugStringA(__FUNCTION__ " end 2");
+	}
 
+	//SGUP_ODS(__FUNCTION__, "release lock")
 	return true;
+}
+
+
+void RplidarReadingQueue::getScan(rp::RplidarProxy::ScanVecType ** theScan)
+{
+
+	
+
+	if (lidarStatus != rp::STARTED) {
+		OutputDebugStringA(__FUNCTION__ " LIDAR not spooled up yet...returning...");
+		*theScan = nullptr;
+		return;
+	}
+	//SGUP_ODSA(__FUNCTION__, "acquiring lock")
+	qMutex.lock();
+	//theScan = storedRead; 
+	*theScan = new rp::RplidarProxy::ScanVecType();
+
+	//(*theScan)->push_back({ 2.2,3.3 });
+	(*theScan)->assign(storedRead.begin(), storedRead.end());
+	//theScan.push_back({ 2.2,3.4 });
+	storedRead.clear();
+	//theScan = crap;
+	//SGUP_ODSA(__FUNCTION__, "BOOBS!", theScan.size());
+	qMutex.unlock();
+//	SGUP_ODS(__FUNCTION__, "unlocked")
+	
+		//try {
+	//	boobs.lock();
+	//	theScan = storedRead;
+	//	boobs.unlock();
+	//}
+	//catch (std::exception &e)
+	//{
+	//	SGUP_ODSA(__FUNCTION__, e.what());
+	//}
+
+	return;
+
+	
+
+	OutputDebugStringA(__FUNCTION__ " going to try and get lock");
+	auto b = qMutex.try_lock();
+	if (!b) {
+		OutputDebugStringA(__FUNCTION__ " try and fail lock");
+		return;
+	}
+	else
+	{
+//		theScan.assign(storedRead.begin(), storedRead.end());
+		OutputDebugStringA(__FUNCTION__ " Got lock, unlocking");
+		qMutex.unlock();
+
+	}
+	//qMutex.lock();
+	
+	OutputDebugStringA(__FUNCTION__ " end");
+	//SGUP_ODS(__FUNCTION__, "releaseing lock")
+
 }
 
 RplidarReadingQueue::~RplidarReadingQueue()
@@ -118,7 +209,7 @@ RplidarReadingQueue::~RplidarReadingQueue()
 void RplidarReadingQueue::stop()
 {
 	SGUP_ODS(__FUNCTION__)
-		keepGoing = false;
+	keepGoing = false;
 	scanThread->interrupt();
 }
 
@@ -211,6 +302,7 @@ bool RplidarReadingQueue::run()
 
 	// fetech result and print it out...
 	while (keepGoing && lidarStatus==rp::STARTED) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(1)); //new
 		rplidar_response_measurement_node_t nodes[8192];
 		size_t   count = _countof(nodes);
 
@@ -231,18 +323,28 @@ bool RplidarReadingQueue::run()
 
 			}
 		}
+		else {
+			SGUP_ODS(__FUNCTION__, "error:strange");
+		}
+
 		try {
 			boost::this_thread::interruption_point();
+		
 		}
 		catch (...)
 		{
+			OutputDebugStringA(__FUNCTION__ "interupt!");
+			
 			SGUP_ODS(__FUNCTION__, "thread interrupt");
 
 			SGUP_ODS("Stopping scan and motor");
 
+			OutputDebugStringA(__FUNCTION__ "about stop motors");
+
 			drv->stop();
 			drv->stopMotor();
 
+			OutputDebugStringA(__FUNCTION__ "motors stopped!");
 			lidarStatus = rp::STOPPED;
 			break;
 		}

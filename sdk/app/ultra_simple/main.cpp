@@ -35,6 +35,7 @@ static inline void delay(_word_size_t ms){
 #endif
 //using rp::standalone::rplidar;
 
+#if 0
 bool checkRPLIDARHealth(rp::standalone::rplidar::RPlidarDriver * drv)
 {
     u_result     op_result;
@@ -58,7 +59,7 @@ bool checkRPLIDARHealth(rp::standalone::rplidar::RPlidarDriver * drv)
         return false;
     }
 }
-
+#endif
 #include <signal.h>
 bool ctrl_c_pressed;
 void ctrlc(int)
@@ -115,25 +116,25 @@ void testSlope() {
 
 using namespace std;
 
-RplidarReadingQueue * grp = nullptr;
+//RplidarReadingQueue * grp = nullptr;
 
 
 
 
-void startLidar(float fromRadial, float toRadial, int qSize) {
+//void startLidar(float fromRadial, float toRadial, int qSize) {
+//
+//	if(grp!=nullptr)
+//		grp=new RplidarReadingQueue( fromRadial,  toRadial,  qSize);
+//	
+//	grp->runThreaded();
+////	rp.join();
+//}
 
-	if(grp!=nullptr)
-		grp=new RplidarReadingQueue( fromRadial,  toRadial,  qSize);
-	
-	grp->runThreaded();
-//	rp.join();
-}
-
-void stopLidar(float fromRadial, float toRadial, int qSize) {
-
-	grp->stop();
-
-}
+//void stopLidar(float fromRadial, float toRadial, int qSize) {
+//
+//	grp->stop();
+//
+//}
 
 
 //using rp::standalone::rplidar;
@@ -179,7 +180,10 @@ inline bool isKeyUp(int keyCode)
 };
 
 INIT_RP_RPLIDAR_PROXY
+INIT_STRGUPLE
 
+#include <chrono>
+#include <thread>
 int main(int argc, const char * argv[]) {
     const char * opt_com_path = NULL;
     _u32         baudrateArray[2] = {115200, 256000};
@@ -188,8 +192,13 @@ int main(int argc, const char * argv[]) {
 
 	std::string dllloc = R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)";
 	 
-
+#ifdef _DEBUG
 	HMODULE h=LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)");
+#else
+	HMODULE h = LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Release\rplidarReader.dll)");
+#endif
+	
+	
 	auto proc=GetProcAddress(h, "StartLidar");
 
 	//auto fnTest = std::function<int(void)>(proc);
@@ -197,35 +206,76 @@ int main(int argc, const char * argv[]) {
 
 	//cout << fnTest() << endl;
 	
-
+	RP_INIT_DLL_FUNCTIONS(h);
 	//auto fnStart = loadDllFunc<int(float, float, int)>(dllloc.c_str(), "StartLidar",h);
 	//auto fnGet = loadDllFunc<int(rp::measure&)>(dllloc.c_str(), "GetMeasure",h);
 	//auto fnStop = loadDllFunc<int(void)>(dllloc.c_str(), "StopLidar",h);
 	//auto fnGetLidarStatus = loadDllFunc<rp::enumLidarStatus(void)>(dllloc.c_str(), "GetLidarStatus", h);
 	
-	rp::RplidarProxy::fnStartLidar = loadDllFunc<rp::RplidarProxy::StartLidarT>("StartLidar", h);
+	/*rp::RplidarProxy::fnStartLidar = loadDllFunc<rp::RplidarProxy::StartLidarT>("StartLidar", h);
 	rp::RplidarProxy::fnGetMeasure = loadDllFunc<rp::RplidarProxy::GetMeasureT>("GetMeasure", h);
 	rp::RplidarProxy::fnStopLidar = loadDllFunc<rp::RplidarProxy::StopLidarT>("StopLidar", h);
 	rp::RplidarProxy::fnGetLidarStatus = loadDllFunc<rp::RplidarProxy::GetLidarStatusT>("GetLidarStatus", h);
-	rp::RplidarProxy::fnStartLidarWithParams = loadDllFunc<rp::RplidarProxy::StartLidarWithParamsT>("StartLidarWithParams", h);
+	rp::RplidarProxy::fnStartLidarWithParams = loadDllFunc<rp::RplidarProxy::StartLidarWithParamsT>("StartLidarWithParams", h);*/
+
+
 
 	cout << "starting lidar, press escape to quit reading" << endl;
 
-	rp::RplidarProxy::fnStartLidarWithParams(355, 10, 1000, 256000, "COM3") ;
+	rp::RplidarProxy::fnStartLidarWithParams(0, 0, 1000, 256000, "COM3") ;
 	rp::measure m;
 	int cnt;
 
 	using  rp::RplidarProxy;
+	//std::vector< std::pair< float, float> >  theScan;
+	rp::RplidarProxy::ScanVecType * scanPointer;
 
 	while (1) {
-		cnt = rp::RplidarProxy::fnGetMeasure(m);
-		if(cnt!=-1)
-			cout << "count:" << cnt << "\t " << m.debugPrint() << endl;
+		//cnt = rp::RplidarProxy::fnGetMeasure(m);
+		rp::RplidarProxy::fnGetScan(&scanPointer);
+
+	/*	for (auto &i : theScan) {
+			cout << i.first << ":" << i.second << endl;
+		}*/
+		if (scanPointer == nullptr) continue;
+
+		cout << "scan..." << scanPointer->size()<< endl;
+
+	/*	if (isKeyDown(VK_PAUSE)) {
+			for (auto &i : *scanPointer) {
+				cout << i.first << ":" << i.second << endl;
+			}
+
+			}*/
+
+
+
+
+
+		//if(cnt!=-1)
+		//	cout << "count:" << cnt << "\t " << m.debugPrint() << endl;
 
 		if (isKeyDown(VK_ESCAPE)) {
 			cout << "escape pressed, shutting down..." << endl;
+
+			for (auto &i : *scanPointer) {
+			//	auto p = rp::measure::convertAngleDist(i.first, i.second);
+				cout <<i.first<<"->"<<  i.second << endl;
+				//roundf(p.first * 10) / 10
+			}
+
 			break;
 		}
+
+		rp::RplidarProxy::fnDestroyScan(&scanPointer);
+		//print out everything
+
+
+		
+
+
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
 
 	
@@ -233,11 +283,11 @@ int main(int argc, const char * argv[]) {
 	rp::RplidarProxy::fnStopLidar();
 	   	
 
-	return 0;
+
 //	auto res=RplidarReadingQueue::GetLinearFit({ {1,10},{2,11},{3,10},{4,11} });
 //	cout << res.first << " " << res.second << endl;
 
-
+#if 0
 
 	RplidarReadingQueue rp(355, 10, 1000);
 	rp.runThreaded();
@@ -399,6 +449,8 @@ int main(int argc, const char * argv[]) {
 on_finished:
 	rp::standalone::rplidar::RPlidarDriver::DisposeDriver(drv);
     drv = NULL;
+
+#endif
     return 0;
 }
 

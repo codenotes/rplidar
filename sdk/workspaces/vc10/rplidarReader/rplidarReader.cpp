@@ -4,7 +4,8 @@
 #include "stdafx.h"
 
 #include "..\ultra_simple\RplidarClass.h"
-
+#include <chrono>
+#include <thread>
 //#define DLL_EXPORT __declspec(dllexport)
 
 RplidarReadingQueue * gpRPInstance = nullptr;
@@ -45,13 +46,15 @@ extern "C"
 			gpRPInstance->stop();
 
 			while (gpRPInstance->getLidarStatus() != rp::STOPPED) {
+				OutputDebugStringA(__FUNCTION__);
 		//		SGUP_ODS(__FUNCTION__, "waiting until status becomes stopped!")
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 
 			SGUP_ODS(__FUNCTION__, "status is STOPPED")
 
 
-			
+				
 			
 
 
@@ -81,6 +84,25 @@ extern "C"
 			return gpRPInstance->getLidarStatus();
 		else
 			return rp::UNKNOWN;
+	}
+
+	DLL_EXPORT void GetScan(rp::RplidarProxy::ScanVecType ** theScan){
+		
+		if (gpRPInstance)
+			gpRPInstance->getScan(theScan);
+
+		
+
+	}
+
+	DLL_EXPORT void DestroyScan(rp::RplidarProxy::ScanVecType ** theScan) {
+
+		delete *theScan;
+		//if (gpRPInstance)
+			//gpRPInstance->getScan(theScan);
+
+
+
 	}
 
 }

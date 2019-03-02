@@ -36,7 +36,7 @@
 struct RplidarReadingQueue {
 	
 	
-
+	std::map<float, _u16> storedRead;
 
 
 
@@ -80,10 +80,10 @@ struct RplidarReadingQueue {
 	rp::standalone::rplidar::RPlidarDriver * drv = nullptr;
 	std::string     opt_com_path;
 	static boost::thread * scanThread;
-	boost::mutex qMutex;
+	static boost::mutex qMutex;
 
 
-	rp::enumLidarStatus lidarStatus=rp::STOPPED;
+	static rp::enumLidarStatus lidarStatus;
 
 	boost::circular_buffer<rp::measure> * cb = nullptr;
 	RplidarReadingQueue(float fromRadial, float toRadial, int qSize, _u32 baud = 256000, char * opt_com_path = (char*)"\\\\.\\com3");
@@ -99,6 +99,8 @@ struct RplidarReadingQueue {
 	bool isInRange(float theta);
 
 	bool push(rp::measure &m);
+
+	void getScan(rp::RplidarProxy::ScanVecType ** theScan);
 
 	~RplidarReadingQueue();
 
@@ -119,4 +121,7 @@ struct RplidarReadingQueue {
 
 
 
-#define INIT_RPLIDAR boost::thread * RplidarReadingQueue::scanThread = nullptr;
+#define INIT_RPLIDAR boost::thread * RplidarReadingQueue::scanThread = nullptr; \
+	boost::mutex RplidarReadingQueue::qMutex; \
+	rp::enumLidarStatus RplidarReadingQueue::lidarStatus=rp::STOPPED;
+
