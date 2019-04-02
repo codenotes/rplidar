@@ -7,4 +7,6 @@ StopLidar
 GetLidarStatus
 StartLidarWithParams
 GetScan
+GetScanWithExpiry
 DestroyScan
+DumpScanToFile

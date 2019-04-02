@@ -240,7 +240,7 @@ int main(int argc, const char * argv[]) {
 		if (scanPointer == nullptr) continue;
 
 		cout << "scan..." << scanPointer->size()<< endl;
-
+		rp::RplidarProxy::fnDumpScanToFile(std::string("c:\\temp\\outfile.txt"),scanPointer, true);
 	/*	if (isKeyDown(VK_PAUSE)) {
 			for (auto &i : *scanPointer) {
 				cout << i.first << ":" << i.second << endl;
@@ -258,11 +258,11 @@ int main(int argc, const char * argv[]) {
 		if (isKeyDown(VK_ESCAPE)) {
 			cout << "escape pressed, shutting down..." << endl;
 
-			for (auto &i : *scanPointer) {
-			//	auto p = rp::measure::convertAngleDist(i.first, i.second);
-				cout <<i.first<<"->"<<  i.second << endl;
-				//roundf(p.first * 10) / 10
-			}
+			//for (auto &i : *scanPointer) {
+			////	auto p = rp::measure::convertAngleDist(i.first, i.second);
+			//	cout <<i.first<<"->"<<  i.second << endl;
+			//	//roundf(p.first * 10) / 10
+			//}
 
 			break;
 		}

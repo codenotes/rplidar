@@ -95,13 +95,51 @@ extern "C"
 
 	}
 
+	DLL_EXPORT void GetScanWithExpiry(rp::RplidarProxy::ScanVecType ** theScan, int NewerThanMsec) {
+
+		if (gpRPInstance) {
+			gpRPInstance->getScan(theScan);
+
+
+			for (rp::RplidarProxy::ScanVecType::const_iterator itr = (**theScan).cbegin(); itr != (**theScan).cend(); ) {
+			
+				auto born = itr->second.second;
+				auto lived = std::chrono::duration_cast<std::chrono::milliseconds>(rp::Clock::now() - born).count();
+
+				if (lived > NewerThanMsec) { //it is old, delete it
+					(**theScan).erase(itr);
+					SGUP_ODS(__FUNCTION__,"old ray detected, deleting:",itr->first, itr->second)
+				}
+				else
+				{
+					std::next(itr);
+				}
+
+				
+			}
+
+		
+
+		}
+
+
+
+	}
+
+
 	DLL_EXPORT void DestroyScan(rp::RplidarProxy::ScanVecType ** theScan) {
 
 		delete *theScan;
 		//if (gpRPInstance)
 			//gpRPInstance->getScan(theScan);
+	}
 
+	DLL_EXPORT void DumpScanToFile(std::string &fname ,	rp::RplidarProxy::ScanVecType * theScan, bool append) {
 
+		if (gpRPInstance) {
+			gpRPInstance->dumpScanToFile(fname ,theScan, append);
+		}
+			//if (gpRPInstance)
 
 	}
 

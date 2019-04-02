@@ -83,15 +83,17 @@ bool RplidarReadingQueue::push(rp::measure &m)
 //	boost::mutex::scoped_lock lock(qMutex);
 	//SGUP_ODS(__FUNCTION__, "acquiring lock")
 
-	auto fnConv=[&](_u16 angle, _u16 dist) {
+	auto fnConv=[&](_u16 angle, _u16 dist, rp::Clock::time_point tp) {
 		auto p = rp::measure::convertAngleDist(angle, dist);
 		auto tkey = roundf(p.first * 10) / 10;
-		storedRead[tkey] = p.second;
+		storedRead[tkey] = { p.second,tp };
 	};
 
 	if (m.distance() == 0) return false;
 
 	auto thet = m.theta();
+	m.born = rp::Clock::now();
+
 
 	if (useRangeFilter)
 		if (isInRange(thet)) {
@@ -99,7 +101,7 @@ bool RplidarReadingQueue::push(rp::measure &m)
 			qMutex.lock();
 			cb->push_back(m);
 
-			fnConv(m.angle_q6_checkbit, m.distance_q2);
+			fnConv(m.angle_q6_checkbit, m.distance_q2, m.born);
 
 			//storedRead[m.angle_q6_checkbit] = m.distance_q2;
 	//		OutputDebugStringA(__FUNCTION__ " end");
@@ -117,7 +119,7 @@ bool RplidarReadingQueue::push(rp::measure &m)
 //		OutputDebugStringA(__FUNCTION__ " start 2");
 		qMutex.lock();
 		cb->push_back(m);
-		fnConv(m.angle_q6_checkbit, m.distance_q2);
+		fnConv(m.angle_q6_checkbit, m.distance_q2, m.born);
 		//storedRead[m.theta()] = m.distance();
 	//	storedRead[m.angle_q6_checkbit] = m.distance_q2;
 		qMutex.unlock();
@@ -366,6 +368,31 @@ bool RplidarReadingQueue::runThreaded()
 void RplidarReadingQueue::join()
 {
 	scanThread->join();
+}
+
+void RplidarReadingQueue::dumpScanToFile(std::string &fname, rp::RplidarProxy::ScanVecType * theScan, bool append/*=false*/)
+{
+	std::fstream of;
+
+	if(append)
+		of.open(fname, std::fstream::out | std::fstream::app);
+	else
+		of.open(fname, std::fstream::out);
+
+	of << "BOOBS" << std::endl;
+	rp::point pnt;
+	float x, y, z;
+	using namespace std;
+
+	for (auto &p : *theScan) {
+		pnt=rp::measure::convToCart(p.second.first, p.first);
+		of <<' '<<  p.first << ' ' << p.second.first <<'\t'<< pnt.x<<' '<<pnt.y<<std::endl;
+	}
+
+
+
+	of << endl << endl;
+
 }
 
 const char * rp::measure::debugPrint()

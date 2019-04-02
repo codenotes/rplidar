@@ -11,7 +11,7 @@
 #include <boost/circular_buffer.hpp>
 #include <boost/thread.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
-
+#include <fstream>
 
 //using namespace rp::standalone::rplidar;
 
@@ -36,7 +36,7 @@
 struct RplidarReadingQueue {
 	
 	
-	std::map<float, _u16> storedRead;
+	std::map<float, std::pair<_u16, rp::Clock::time_point> > storedRead;
 
 
 
@@ -116,6 +116,8 @@ struct RplidarReadingQueue {
 	bool runThreaded();
 
 	void join();
+
+	void dumpScanToFile(std::string & fname, rp::RplidarProxy::ScanVecType * theScan, bool append);
 
 };
 
