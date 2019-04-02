@@ -97,10 +97,13 @@ extern "C"
 
 	DLL_EXPORT void GetScanWithExpiry(rp::RplidarProxy::ScanVecType ** theScan, int NewerThanMsec) {
 
+
+		SGUP_ODS(__FUNCTION__)
+
 		if (gpRPInstance) {
 			gpRPInstance->getScan(theScan);
 
-
+			return;
 			for (rp::RplidarProxy::ScanVecType::const_iterator itr = (**theScan).cbegin(); itr != (**theScan).cend(); ) {
 			
 				auto born = itr->second.second;
@@ -108,7 +111,7 @@ extern "C"
 
 				if (lived > NewerThanMsec) { //it is old, delete it
 					(**theScan).erase(itr);
-					SGUP_ODS(__FUNCTION__,"old ray detected, deleting:",itr->first, itr->second)
+					SGUP_ODS(__FUNCTION__,"old ray detected, deleting:",itr->first, itr->second.first) //angle/distance
 				}
 				else
 				{
