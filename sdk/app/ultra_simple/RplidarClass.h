@@ -100,7 +100,7 @@ struct RplidarReadingQueue {
 
 	bool push(rp::measure &m);
 
-	void getScan(rp::RplidarProxy::ScanVecType ** theScan);
+	void getScan(rp::RplidarProxy::ScanVecType ** theScan, int msecExpiry=0);
 
 	~RplidarReadingQueue();
 

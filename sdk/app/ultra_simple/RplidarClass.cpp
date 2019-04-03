@@ -131,7 +131,7 @@ bool RplidarReadingQueue::push(rp::measure &m)
 }
 
 
-void RplidarReadingQueue::getScan(rp::RplidarProxy::ScanVecType ** theScan)
+void RplidarReadingQueue::getScan(rp::RplidarProxy::ScanVecType ** theScan, int msecExpiry)
 {
 
 	
@@ -143,13 +143,38 @@ void RplidarReadingQueue::getScan(rp::RplidarProxy::ScanVecType ** theScan)
 	}
 	//SGUP_ODSA(__FUNCTION__, "acquiring lock")
 	qMutex.lock();
-	//theScan = storedRead; 
+	//theScan = storedRead;
+	//<angle  <distance, timepoint   >>    
 	*theScan = new rp::RplidarProxy::ScanVecType();
 
-	//(*theScan)->push_back({ 2.2,3.3 });
-	(*theScan)->assign(storedRead.begin(), storedRead.end());
-	//theScan.push_back({ 2.2,3.4 });
-	storedRead.clear();
+	if (msecExpiry == 0) {
+		//(*theScan)->push_back({ 2.2,3.3 });
+		(*theScan)->assign(storedRead.begin(), storedRead.end());
+		//theScan.push_back({ 2.2,3.4 });
+		storedRead.clear();
+	}
+	else { //we have an expiry time
+
+		for (auto &x : storedRead) {
+
+			auto born = RP_GET_EXPIRY(x);
+			auto lived = std::chrono::duration_cast<std::chrono::milliseconds>(rp::Clock::now() - born).count();
+
+			if (lived > msecExpiry) { //it is old, skip it
+				//(**theScan).erase(itr);
+
+				SGUP_ODS(__FUNCTION__, "old ray detected, deleting:", x.first, x.second.first) //angle/distance
+			}
+			else
+			{
+				(*theScan)->push_back(x);
+
+			//	std::next(itr);
+			}
+		}
+
+		storedRead.clear();
+	}
 	//theScan = crap;
 	//SGUP_ODSA(__FUNCTION__, "BOOBS!", theScan.size());
 	qMutex.unlock();

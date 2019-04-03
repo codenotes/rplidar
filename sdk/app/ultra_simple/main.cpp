@@ -200,6 +200,10 @@ int main(int argc, const char * argv[]) {
 	
 	
 	auto proc=GetProcAddress(h, "StartLidar");
+	auto test= loadDllFunc<rp::RplidarProxy::GetScanWithExpiryT>("GetScanWithExpiry", h); 
+
+
+
 
 	//auto fnTest = std::function<int(void)>(proc);
 	auto fnTest = loadDllFunc<int(void)>( "test",h);
@@ -219,7 +223,6 @@ int main(int argc, const char * argv[]) {
 	rp::RplidarProxy::fnStartLidarWithParams = loadDllFunc<rp::RplidarProxy::StartLidarWithParamsT>("StartLidarWithParams", h);*/
 
 
-
 	cout << "starting lidar, press escape to quit reading" << endl;
 
 	rp::RplidarProxy::fnStartLidarWithParams(0, 0, 1000, 256000, "COM3") ;
@@ -234,7 +237,7 @@ int main(int argc, const char * argv[]) {
 		//cnt = rp::RplidarProxy::fnGetMeasure(m);
 	//	rp::RplidarProxy::fnGetScan(&scanPointer);
 
-		rp::RplidarProxy::fnGetScanExpiry(&scanPointer,500);
+		rp::RplidarProxy::fnGetScanWithExpiry(&scanPointer,500);
 
 	/*	for (auto &i : theScan) {
 			cout << i.first << ":" << i.second << endl;

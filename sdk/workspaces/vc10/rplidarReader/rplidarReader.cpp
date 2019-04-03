@@ -101,27 +101,8 @@ extern "C"
 		SGUP_ODS(__FUNCTION__)
 
 		if (gpRPInstance) {
-			gpRPInstance->getScan(theScan);
-
-		
-			for (rp::RplidarProxy::ScanVecType::const_iterator itr = (**theScan).cbegin(); itr != (**theScan).cend(); ) {
-			
-				auto born = itr->second.second;
-				auto lived = std::chrono::duration_cast<std::chrono::milliseconds>(rp::Clock::now() - born).count();
-
-				if (lived > NewerThanMsec) { //it is old, delete it
-					(**theScan).erase(itr);
-					SGUP_ODS(__FUNCTION__,"old ray detected, deleting:",itr->first, itr->second.first) //angle/distance
-				}
-				else
-				{
-					std::next(itr);
-				}
-
-				
-			}
-
-		
+			gpRPInstance->getScan(theScan,NewerThanMsec);
+	
 
 		}
 
