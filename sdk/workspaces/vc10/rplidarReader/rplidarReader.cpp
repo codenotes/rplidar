@@ -103,7 +103,7 @@ extern "C"
 		if (gpRPInstance) {
 			gpRPInstance->getScan(theScan);
 
-			return;
+		
 			for (rp::RplidarProxy::ScanVecType::const_iterator itr = (**theScan).cbegin(); itr != (**theScan).cend(); ) {
 			
 				auto born = itr->second.second;
