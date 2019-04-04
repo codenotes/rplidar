@@ -237,7 +237,7 @@ int main(int argc, const char * argv[]) {
 		//cnt = rp::RplidarProxy::fnGetMeasure(m);
 	//	rp::RplidarProxy::fnGetScan(&scanPointer);
 
-		rp::RplidarProxy::fnGetScanWithExpiry(&scanPointer,500);
+		rp::RplidarProxy::fnGetScanWithExpiry(&scanPointer,1500);
 
 	/*	for (auto &i : theScan) {
 			cout << i.first << ":" << i.second << endl;
