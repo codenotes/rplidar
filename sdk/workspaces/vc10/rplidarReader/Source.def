@@ -10,3 +10,5 @@ GetScan
 GetScanWithExpiry
 DestroyScan
 DumpScanToFile
+GetComPortLidar
+DestroyGetComPortLidar

@@ -179,6 +179,23 @@ inline bool isKeyUp(int keyCode)
 	return ((GetAsyncKeyState(keyCode) & 0x8000) ? 0 : 1);
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 INIT_RP_RPLIDAR_PROXY
 INIT_STRGUPLE
 
