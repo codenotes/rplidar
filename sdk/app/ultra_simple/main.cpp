@@ -239,6 +239,10 @@ int main(int argc, const char * argv[]) {
 	rp::RplidarProxy::fnGetLidarStatus = loadDllFunc<rp::RplidarProxy::GetLidarStatusT>("GetLidarStatus", h);
 	rp::RplidarProxy::fnStartLidarWithParams = loadDllFunc<rp::RplidarProxy::StartLidarWithParamsT>("StartLidarWithParams", h);*/
 
+	rp::RplidarProxy::wmiReportType *temp;
+
+	rp::RplidarProxy::fnGetComPortLidar(&temp);
+	return 0;
 
 	cout << "starting lidar, press escape to quit reading" << endl;
 
