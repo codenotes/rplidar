@@ -201,6 +201,32 @@ INIT_STRGUPLE
 
 #include <chrono>
 #include <thread>
+#include <optional>
+
+//std::optional<std::string>  findRplidarComPort()
+//{
+//	rp::RplidarProxy::wmiReportType *temp;
+//	rp::RplidarProxy::fnGetComPortLidar(&temp);
+//
+//	for (auto &i : *temp)
+//	{
+//		auto com = i.first.substr(i.first.find(":") + 1);
+//		auto desc = i.second.substr(i.second.find(":") + 1);
+//
+//		if (desc.find("Silicon") != std::string::npos) {
+//
+//			remove_if(com.begin(), com.end(), isspace);
+//			return com;
+//			//cout << "FOUND RPLIDAR COM PORT:" << com << ", " << desc << endl;
+//		}
+//		else {
+//			return std::nullopt;
+//		//	cout << "Did not find a rplidar com port (Silicon Labs)" << endl;
+//		}
+//
+//	}
+//}
+
 int main(int argc, const char * argv[]) {
     const char * opt_com_path = NULL;
     _u32         baudrateArray[2] = {115200, 256000};
@@ -228,6 +254,64 @@ int main(int argc, const char * argv[]) {
 	//cout << fnTest() << endl;
 	
 	RP_INIT_DLL_FUNCTIONS(h);
+
+
+
+
+	//test area
+
+	SGUP_ODSA(__FUNCTION__);
+	rp::RplidarProxy::wmiReportType *temp;
+
+	try {
+
+		rp::RplidarProxy::fnGetComPortLidar(&temp);
+	}
+	catch (std::exception &e)
+	{
+		SGUP_ODSA(__FUNCTION__, "exception getting ports", e.what());
+		return 0;
+	}
+
+
+	for (auto &i : *temp)
+	{
+		auto com = i.first.substr(i.first.find(":") + 1);
+		auto desc = i.second.substr(i.second.find(":") + 1);
+		SGUP_ODSA(__FUNCTION__, desc);
+
+		if (desc.find("Silicon") != std::string::npos) {
+
+			SGUP_ODSA(__FUNCTION__, "found silicon, adding");
+			//	remove_if(com.begin(), com.end(), isspace);
+				//return com;
+			cout << com << endl;
+			//cout << "FOUND RPLIDAR COM PORT:" << com << ", " << desc << endl;
+		}
+		else {
+			//	return std::nullopt;
+				//	cout << "Did not find a rplidar com port (Silicon Labs)" << endl;
+		}
+
+	}
+	
+	return 0;
+
+
+	//end test area
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//auto fnStart = loadDllFunc<int(float, float, int)>(dllloc.c_str(), "StartLidar",h);
 	//auto fnGet = loadDllFunc<int(rp::measure&)>(dllloc.c_str(), "GetMeasure",h);
 	//auto fnStop = loadDllFunc<int(void)>(dllloc.c_str(), "StopLidar",h);
@@ -239,14 +323,16 @@ int main(int argc, const char * argv[]) {
 	rp::RplidarProxy::fnGetLidarStatus = loadDllFunc<rp::RplidarProxy::GetLidarStatusT>("GetLidarStatus", h);
 	rp::RplidarProxy::fnStartLidarWithParams = loadDllFunc<rp::RplidarProxy::StartLidarWithParamsT>("StartLidarWithParams", h);*/
 
-	rp::RplidarProxy::wmiReportType *temp;
+	auto res=rp::RplidarProxy::findRplidarComPort();
 
-	rp::RplidarProxy::fnGetComPortLidar(&temp);
-	return 0;
+	if (!res) {
+		cout << "didnt find a Silicon COM port, so rplidar not plugged in or something" << endl;
+		return 1;
+	}
 
 	cout << "starting lidar, press escape to quit reading" << endl;
 
-	rp::RplidarProxy::fnStartLidarWithParams(0, 0, 1000, 256000, "COM3") ;
+	rp::RplidarProxy::fnStartLidarWithParams(0, 0, 1000, 256000, (*res).c_str()   ) ;
 	rp::measure m;
 	int cnt;
 

@@ -13,7 +13,7 @@ INIT_RPLIDAR
 INIT_STRGUPLE
 
 RplidarReadingQueue::RplidarReadingQueue(float fromRadial, float toRadial, int qSize,
-	_u32 baud /*= 256000*/, char * opt_com_path /*= "\\\\.\\com3"*/) :fromRadial(fromRadial), toRadial(toRadial), baud(baud), opt_com_path(opt_com_path), useRangeFilter(true)
+	_u32 baud /*= 256000*/,const char * opt_com_path /*= "\\\\.\\com3"*/) :fromRadial(fromRadial), toRadial(toRadial), baud(baud), opt_com_path(opt_com_path), useRangeFilter(true)
 {
 	SGUP_ODSA(__FUNCTION__, "COMPORT RECEIVED:", opt_com_path)
 	cb = new boost::circular_buffer<rp::measure>(qSize);

@@ -25,7 +25,7 @@ extern "C"
 	}
 
 	DLL_EXPORT int StartLidarWithParams(float fromRadial, float toRadial, int qSize,
-		int baud,  char* comport) {
+		int baud,  const char* comport) {
 		SGUP_ODS(__FUNCTION__)
 
 			if (gpRPInstance == nullptr)

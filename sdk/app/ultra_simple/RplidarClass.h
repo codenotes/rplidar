@@ -86,7 +86,7 @@ struct RplidarReadingQueue {
 	static rp::enumLidarStatus lidarStatus;
 
 	boost::circular_buffer<rp::measure> * cb = nullptr;
-	RplidarReadingQueue(float fromRadial, float toRadial, int qSize, _u32 baud = 256000, char * opt_com_path = (char*)"\\\\.\\com3");
+	RplidarReadingQueue(float fromRadial, float toRadial, int qSize, _u32 baud = 256000, const char * opt_com_path = "\\\\.\\com3");
 
 	RplidarReadingQueue(int size);
 

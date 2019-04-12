@@ -6,6 +6,8 @@
 #include <string>
 #include "C:/usr/include/rplidar/RPlidarNeedfullsForDLL.h"
 
+#include "C:\usr\include\GregUtils\strguple.h"
+
 using namespace std;
 #pragma comment(lib, "wbemuuid.lib")
 
@@ -32,8 +34,9 @@ extern "C"
 		hres = CoInitializeEx(0, COINIT_MULTITHREADED);
 		if (FAILED(hres))
 		{
-			cout << "Failed to initialize COM library. Error code = 0x"
-				<< hex << hres << endl;
+			SGUP_ODSA(__FUNCTION__, "Failed to initialize COM library. Error code =", hres);
+
+			//	<< hex << hres << endl;
 			//return 1;                  // Program has failed.
 		}
 
@@ -55,11 +58,12 @@ extern "C"
 
 		if (FAILED(hres))
 		{
-			cout << "Failed to initialize security. Error code = 0x"
-				<< hex << hres << endl;
+			SGUP_ODSA(__FUNCTION__, "Failed to initialize security. Error code =", hres);
+			//cout << "Failed to initialize security. Error code = 0x"
+			//	<< hex << hres << endl;
 			CoUninitialize();
 			//return 1;                    // Program has failed.
-			return;
+			//return;
 		}
 
 		// Step 3: ---------------------------------------------------
@@ -75,9 +79,10 @@ extern "C"
 
 		if (FAILED(hres))
 		{
-			cout << "Failed to create IWbemLocator object."
+			SGUP_ODSA(__FUNCTION__, "failed to create IWbemLocator object =", hres);
+		/*	cout << "Failed to create IWbemLocator object."
 				<< " Err code = 0x"
-				<< hex << hres << endl;
+				<< hex << hres << endl;*/
 			CoUninitialize();
 			return;
 			//return 1;                 // Program has failed.
@@ -104,14 +109,17 @@ extern "C"
 
 		if (FAILED(hres))
 		{
-			cout << "Could not connect. Error code = 0x"
-				<< hex << hres << endl;
+
+			SGUP_ODSA(__FUNCTION__, "could not connect. Error code =", hres);
+
+			/*cout << "Could not connect. Error code = 0x"
+				<< hex << hres << endl;*/
 			pLoc->Release();
 			CoUninitialize();
 			return;                // Program has failed.
 		}
 
-		cout << "Connected to ROOT\\CIMV2 WMI namespace" << endl;
+		//cout << "Connected to ROOT\\CIMV2 WMI namespace" << endl;
 
 
 		// Step 5: --------------------------------------------------
@@ -130,8 +138,10 @@ extern "C"
 
 		if (FAILED(hres))
 		{
-			cout << "Could not set proxy blanket. Error code = 0x"
-				<< hex << hres << endl;
+			SGUP_ODSA(__FUNCTION__, "Could not set proxy blanket. Error code =", hres);
+
+			//cout << "Could not set proxy blanket. Error code = 0x"
+			//	<< hex << hres << endl;
 			pSvc->Release();
 			pLoc->Release();
 			CoUninitialize();
@@ -153,9 +163,11 @@ extern "C"
 
 		if (FAILED(hres))
 		{
-			cout << "Query for operating system name failed."
+			SGUP_ODSA(__FUNCTION__, "Query for operating system name failed. Error code =", hres);
+
+		/*	cout << "Query for operating system name failed."
 				<< " Error code = 0x"
-				<< hex << hres << endl;
+				<< hex << hres << endl;*/
 			pSvc->Release();
 			pLoc->Release();
 			CoUninitialize();
@@ -182,12 +194,12 @@ extern "C"
 
 			// Get the value of the Name property
 			hr = pclsObj->Get(L"DeviceID", 0, &vtProp, 0, 0);
-			wcout << " DeviceID : " << vtProp.bstrVal << endl;
+		//	wcout << " DeviceID : " << vtProp.bstrVal << endl;
 			_bstr_t name= vtProp.bstrVal;
 			VariantClear(&vtProp);
 
 			hr = pclsObj->Get(L"Name", 0, &vtProp, 0, 0);
-			wcout << " Name : " << vtProp.bstrVal << endl;
+			//wcout << " Name : " << vtProp.bstrVal << endl;
 			_bstr_t desc = vtProp.bstrVal;
 			VariantClear(&vtProp);
 
@@ -208,5 +220,7 @@ extern "C"
 		return;   // Program successfully completed.
 
 	}
+
+
 
 }
