@@ -12,6 +12,9 @@
 #include <boost/thread.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <fstream>
+#include <boost/format.hpp>
+
+
 
 //using namespace rp::standalone::rplidar;
 
@@ -119,6 +122,7 @@ struct RplidarReadingQueue {
 
 	void dumpScanToFile(std::string & fname, rp::RplidarProxy::ScanVecType * theScan, bool append);
 
+	void savePresentScan(int id, std::string & database);
 };
 
 

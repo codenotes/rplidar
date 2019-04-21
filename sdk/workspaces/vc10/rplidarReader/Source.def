@@ -12,3 +12,4 @@ DestroyScan
 DumpScanToFile
 GetComPortLidar
 DestroyGetComPortLidar
+SavePresentScan

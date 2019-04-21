@@ -127,4 +127,13 @@ extern "C"
 
 	}
 
+	DLL_EXPORT void SavePresentScan(int id, std::string & database) {
+
+
+		if (gpRPInstance) {
+			gpRPInstance->savePresentScan(id,database);
+		}
+
+	}
+
 }

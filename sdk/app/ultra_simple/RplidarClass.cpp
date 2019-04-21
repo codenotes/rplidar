@@ -9,6 +9,8 @@
 #include <chrono>
 #include <thread>
 
+#include "c:/usr/include/gregutils/Sqlbuilder.h"
+
 INIT_RPLIDAR
 INIT_STRGUPLE
 
@@ -417,6 +419,49 @@ void RplidarReadingQueue::dumpScanToFile(std::string &fname, rp::RplidarProxy::S
 
 
 	of << endl << endl;
+
+}
+
+
+INIT_SQLBUILDER
+
+void RplidarReadingQueue::savePresentScan(int id, std::string & database)
+{
+
+	rp::RplidarProxy::ScanVecType ** sv;
+
+	SQLBuilder  sb;
+	sb.createOrOpenDatabase(database);
+
+	getScan(sv);
+	qMutex.lock();
+
+
+
+	//insert all this in SQL
+	if (sv != nullptr);
+		for (auto &reading : **sv) {
+
+			auto angle = reading.first;
+			auto dist = reading.second.first;
+
+			auto s = boost::format("insert into sweep(id, angle, distance) VALUES(%1%,%2%,%3%);") % id %angle %dist;
+				
+
+			sb.sendSQL(s.str());
+
+		}
+
+
+
+		
+
+	//end sql
+
+	qMutex.unlock();
+	DestroyScan(sv);
+
+
 
 }
 
