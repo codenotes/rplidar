@@ -474,7 +474,8 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database)
 	getScan(sv);
 	qMutex.lock();
 
-
+	std::stringstream ss;
+	ss<< "insert into sweep(id, angle, distance) VALUES \n";
 
 	//insert all this in SQL
 	if (sv != nullptr);
@@ -483,17 +484,27 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database)
 			auto angle = reading.first;
 			auto dist = reading.second.first;
 
-			auto s = boost::format("insert into sweep(id, angle, distance) VALUES(%1%,%2%,%3%);") % id %angle %dist;
+			auto s = boost::format("(%1%,%2%,%3%),\n") % id %angle %dist;
+			ss << s << std::endl;
+
 		/*	sqlite3_bind_double( ppStmt,1, id);
 			sqlite3_bind_double(ppStmt, 2, angle);
 			sqlite3_bind_double(ppStmt, 3, dist);
 			
 			rc = sqlite3_step(ppStmt)) == SQLITE_ROW*/
-			sb.sendSQL(s.str());
 
 		} 
 
 
+		ss.seekp(-1, ss.cur); //replace comma with semi
+		ss << ';';
+
+		auto b=sb.sendSQL(ss.str());
+
+		if (!b)
+		{
+			SGUP_ODSA(__FUNCTION__, __LINE__, "sendsql failed");
+		}
 
 		
 
