@@ -425,13 +425,51 @@ void RplidarReadingQueue::dumpScanToFile(std::string &fname, rp::RplidarProxy::S
 
 INIT_SQLBUILDER
 
+
+auto bind(SQLBuilder  & sb, int const index, int const value)
+{
+//	ASSERT(handle);
+	sqlite3_stmt *ppStmt;
+	std::string sql = "insert into sweep(id, angle, distance) VALUES(?1,?2,?3)";
+
+	auto result = sqlite3_prepare_v2(sb.gdb,
+		sql.c_str(),
+		sql.length(),
+		&ppStmt,
+		nullptr);
+
+//	auto const result = sqlite3_bind_int(0,
+	//	value);
+
+	if (SQLITE_OK != result)
+	{
+	/*	throw sql_exception
+		{
+		  result,
+		  sqlite3_errmsg(sqlite3_db_handle(handle.get()))
+		};*/
+	}
+}
+
 void RplidarReadingQueue::savePresentScan(int id, std::string & database)
 {
+
+	//sqlite3_stmt *ppStmt;
+	//std::string sql = "insert into sweep(id, angle, distance) VALUES(?1,?2,?3)";
+
+
 
 	rp::RplidarProxy::ScanVecType ** sv;
 
 	SQLBuilder  sb;
 	sb.createOrOpenDatabase(database);
+
+	//auto result = sqlite3_prepare_v2(sb.gdb,
+	//	sql.c_str(),
+	//	sql.length(),
+	//	&ppStmt,
+	//	nullptr);
+
 
 	getScan(sv);
 	qMutex.lock();
@@ -446,11 +484,14 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database)
 			auto dist = reading.second.first;
 
 			auto s = boost::format("insert into sweep(id, angle, distance) VALUES(%1%,%2%,%3%);") % id %angle %dist;
-				
-
+		/*	sqlite3_bind_double( ppStmt,1, id);
+			sqlite3_bind_double(ppStmt, 2, angle);
+			sqlite3_bind_double(ppStmt, 3, dist);
+			
+			rc = sqlite3_step(ppStmt)) == SQLITE_ROW*/
 			sb.sendSQL(s.str());
 
-		}
+		} 
 
 
 
