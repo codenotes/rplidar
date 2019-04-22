@@ -495,9 +495,8 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database)
 
 		} 
 
+		REPLACE_LAST_CHAR_ON_SS(ss,';')
 
-		ss.seekp(-1, ss.cur); //replace comma with semi
-		ss << ';';
 
 		auto b=sb.sendSQL(ss.str());
 
