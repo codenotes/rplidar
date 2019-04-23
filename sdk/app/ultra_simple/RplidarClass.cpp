@@ -505,7 +505,7 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::Rp
 			auto angle = reading.first;
 			auto dist = reading.second.first;
 
-			auto s = boost::format("(%1%,%2%,%3%),\n") % id %angle %dist;
+			auto s = boost::format("(%1%,%2%,%3%),") % id %angle %dist;
 
 	//		SGUP_ODSA(__FUNCTION__,"looping...", s);
 			ss << s << std::endl;
@@ -518,7 +518,9 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::Rp
 
 		} 
 
-		REPLACE_LAST_CHAR_ON_SS(ss, ';')
+		ss.seekp(-2, ss.cur); 
+		ss << "; ";
+	//	REPLACE_LAST_CHAR_ON_SS(ss, ';')
 
 		SGUP_ODSA(__FUNCTION__, ss.str());
 
