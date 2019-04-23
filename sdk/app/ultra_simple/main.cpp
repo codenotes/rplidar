@@ -13,7 +13,7 @@
 //#include <boost/circular_buffer.hpp>
 //#include <boost/thread.hpp>
 
-
+#define DB_PATH R"(C:\usr\data\cirrus.db)"
 
 #ifndef _countof
 #define _countof(_Array) (int)(sizeof(_Array) / sizeof(_Array[0]))
@@ -259,7 +259,7 @@ int main(int argc, const char * argv[]) {
 
 
 	//test area
-
+#ifdef TEST0
 	SGUP_ODSA(__FUNCTION__);
 	rp::RplidarProxy::wmiReportType *temp;
 
@@ -296,11 +296,11 @@ int main(int argc, const char * argv[]) {
 	}
 	
 	return 0;
-
+#endif
 
 	//end test area
 
-
+	using namespace std;
 
 
 
@@ -329,8 +329,17 @@ int main(int argc, const char * argv[]) {
 		cout << "didnt find a Silicon COM port, so rplidar not plugged in or something" << endl;
 		return 1;
 	}
+	else
+	{
+		cout << "LIDAR found on:" << *res << endl;
+	}
+	
+	//cout << "Loading cirrus.db:" << DB_PATH << endl;
 
+	
+	   
 	cout << "starting lidar, press escape to quit reading" << endl;
+
 
 	rp::RplidarProxy::fnStartLidarWithParams(0, 0, 1000, 256000, (*res).c_str()   ) ;
 	rp::measure m;
@@ -338,7 +347,8 @@ int main(int argc, const char * argv[]) {
 
 	using  rp::RplidarProxy;
 	//std::vector< std::pair< float, float> >  theScan;
-	rp::RplidarProxy::ScanVecType * scanPointer;
+	rp::RplidarProxy::ScanVecType * scanPointer=nullptr;
+	int scanID = 0;
 
 	while (1) {
 		//cnt = rp::RplidarProxy::fnGetMeasure(m);
@@ -346,13 +356,17 @@ int main(int argc, const char * argv[]) {
 
 		rp::RplidarProxy::fnGetScanWithExpiry(&scanPointer,1500);
 
+
 	/*	for (auto &i : theScan) {
 			cout << i.first << ":" << i.second << endl;
 		}*/
 		if (scanPointer == nullptr) continue;
 
 		cout << "scan..." << scanPointer->size()<< endl;
-		rp::RplidarProxy::fnDumpScanToFile(std::string("c:\\temp\\outfile.txt"),scanPointer, true);
+		rp::RplidarProxy::fnSavePresentScan(scanID++, std::string(DB_PATH), scanPointer);
+	
+		
+	//	rp::RplidarProxy::fnDumpScanToFile(std::string("c:\\temp\\outfile.txt"),scanPointer, true);
 	/*	if (isKeyDown(VK_PAUSE)) {
 			for (auto &i : *scanPointer) {
 				cout << i.first << ":" << i.second << endl;
@@ -361,8 +375,7 @@ int main(int argc, const char * argv[]) {
 			}*/
 
 
-
-
+	
 
 		//if(cnt!=-1)
 		//	cout << "count:" << cnt << "\t " << m.debugPrint() << endl;

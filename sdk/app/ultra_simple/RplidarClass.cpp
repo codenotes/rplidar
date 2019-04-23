@@ -451,7 +451,7 @@ auto bind(SQLBuilder  & sb, int const index, int const value)
 	}
 }
 
-void RplidarReadingQueue::savePresentScan(int id, std::string & database)
+void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType * theScan)
 {
 
 	//sqlite3_stmt *ppStmt;
@@ -459,7 +459,7 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database)
 
 
 
-	rp::RplidarProxy::ScanVecType ** sv;
+	//rp::RplidarProxy::ScanVecType * sv;
 
 	SQLBuilder  sb;
 	sb.createOrOpenDatabase(database);
@@ -469,22 +469,45 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database)
 	//	sql.length(),
 	//	&ppStmt,
 	//	nullptr);
+	
+	if (theScan == nullptr) { //possibly not spooled up yet?
+		SGUP_ODSA(__FUNCTION__, __LINE__, "bad scan nullptr");
+		return;
+	}
 
 
-	getScan(sv);
-	qMutex.lock();
+	if (theScan->size() == 0) {
+		SGUP_ODSA(__FUNCTION__, __LINE__, "0 size scan");
+		return;
+	}
+	else
+	{
+		SGUP_ODSA(__FUNCTION__, "size:", theScan->size());
+	}
+
+	//else if (theScan->size() == 0)
+	//{
+	//	SGUP_ODSA(__FUNCTION__, __LINE__, "getScan size 0");
+	//	return;
+	//}
+	//else
+	//	SGUP_ODSA(__FUNCTION__, __LINE__, "getScan size:", sv->size());
+	
+
 
 	std::stringstream ss;
 	ss<< "insert into sweep(id, angle, distance) VALUES \n";
-
+	
 	//insert all this in SQL
-	if (sv != nullptr);
-		for (auto &reading : **sv) {
+	//if (sv != nullptr);
+		for (auto &reading : *theScan) {
 
 			auto angle = reading.first;
 			auto dist = reading.second.first;
 
 			auto s = boost::format("(%1%,%2%,%3%),\n") % id %angle %dist;
+
+	//		SGUP_ODSA(__FUNCTION__,"looping...", s);
 			ss << s << std::endl;
 
 		/*	sqlite3_bind_double( ppStmt,1, id);
@@ -495,7 +518,9 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database)
 
 		} 
 
-		REPLACE_LAST_CHAR_ON_SS(ss,';')
+		REPLACE_LAST_CHAR_ON_SS(ss, ';')
+
+		SGUP_ODSA(__FUNCTION__, ss.str());
 
 
 		auto b=sb.sendSQL(ss.str());
@@ -505,13 +530,9 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database)
 			SGUP_ODSA(__FUNCTION__, __LINE__, "sendsql failed");
 		}
 
-		
-
 	//end sql
 
-	qMutex.unlock();
-	DestroyScan(sv);
-
+	
 
 
 }
