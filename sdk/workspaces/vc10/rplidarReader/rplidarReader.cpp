@@ -127,13 +127,23 @@ extern "C"
 
 	}
 
-	DLL_EXPORT void SavePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType * theScan) {
+	DLL_EXPORT void SavePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType * theScan, float tilt) {
 
 
 		if (gpRPInstance) {
-			gpRPInstance->savePresentScan(id,database, theScan);
+			gpRPInstance->savePresentScan(id,database, theScan,tilt);
 		}
 
 	}
+
+
+	DLL_EXPORT bool SendSQL(std::string & sql)
+	{
+		if (gpRPInstance) {
+			return gpRPInstance->sendSQL(sql);
+		}
+
+	}
+
 
 }

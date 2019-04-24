@@ -13,3 +13,4 @@ DumpScanToFile
 GetComPortLidar
 DestroyGetComPortLidar
 SavePresentScan
+SendSQL

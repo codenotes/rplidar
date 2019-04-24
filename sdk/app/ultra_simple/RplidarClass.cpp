@@ -451,7 +451,8 @@ auto bind(SQLBuilder  & sb, int const index, int const value)
 	}
 }
 
-void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType * theScan)
+void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType * theScan,
+	float tilt)
 {
 
 	//sqlite3_stmt *ppStmt;
@@ -537,6 +538,13 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::Rp
 	
 
 
+}
+
+
+bool RplidarReadingQueue::sendSQL(std::string & sql)
+{
+	//TODO:this sql stuff
+	return false;
 }
 
 const char * rp::measure::debugPrint()

@@ -122,7 +122,9 @@ struct RplidarReadingQueue {
 
 	void dumpScanToFile(std::string & fname, rp::RplidarProxy::ScanVecType * theScan, bool append);
 
-	void savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType * theScan);
+	void savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType * theScan, float tilt);
+
+	bool sendSQL(std::string & sql);
 };
 
 
