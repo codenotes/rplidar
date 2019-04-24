@@ -88,7 +88,8 @@ bool RplidarReadingQueue::push(rp::measure &m)
 	auto fnConv=[&](_u16 angle, _u16 dist, rp::Clock::time_point tp) {
 		auto p = rp::measure::convertAngleDist(angle, dist);
 		auto tkey = roundf(p.first * 10) / 10;
-		storedRead[tkey] = { p.second,tp };
+	//	storedRead[tkey] = { p.second,tp }; //tkey is angle
+		storedRead[tkey] = {  rp::beam(p.second, RplidarReadingQueue::tilt, tp) }; //[angle] ={ distance }
 	};
 
 	if (m.distance() == 0) return false;
@@ -133,7 +134,7 @@ bool RplidarReadingQueue::push(rp::measure &m)
 }
 
 
-void RplidarReadingQueue::getScan(rp::RplidarProxy::ScanVecType ** theScan, int msecExpiry)
+void RplidarReadingQueue::getScan(rp::RplidarProxy::ScanVecType2 ** theScan, int msecExpiry)
 {
 
 	
@@ -147,7 +148,7 @@ void RplidarReadingQueue::getScan(rp::RplidarProxy::ScanVecType ** theScan, int 
 	qMutex.lock();
 	//theScan = storedRead;
 	//<angle  <distance, timepoint   >>    
-	*theScan = new rp::RplidarProxy::ScanVecType();
+	*theScan = new rp::RplidarProxy::ScanVecType2();
 
 	if (msecExpiry == 0) {
 		//(*theScan)->push_back({ 2.2,3.3 });
@@ -159,7 +160,7 @@ void RplidarReadingQueue::getScan(rp::RplidarProxy::ScanVecType ** theScan, int 
 
 		for (auto &x : storedRead) {
 
-			auto born = RP_GET_EXPIRY(x);
+			auto born =  x.second.stamp  ;//RP_GET_EXPIRY(x);
 			auto lived = std::chrono::duration_cast<std::chrono::milliseconds>(rp::Clock::now() - born).count();
 
 			if (lived > msecExpiry) { //it is old, skip it
@@ -397,7 +398,7 @@ void RplidarReadingQueue::join()
 	scanThread->join();
 }
 
-void RplidarReadingQueue::dumpScanToFile(std::string &fname, rp::RplidarProxy::ScanVecType * theScan, bool append/*=false*/)
+void RplidarReadingQueue::dumpScanToFile(std::string &fname, rp::RplidarProxy::ScanVecType2 * theScan, bool append/*=false*/)
 {
 	std::fstream of;
 
@@ -412,8 +413,8 @@ void RplidarReadingQueue::dumpScanToFile(std::string &fname, rp::RplidarProxy::S
 	using namespace std;
 
 	for (auto &p : *theScan) {
-		pnt=rp::measure::convToCart(p.second.first, p.first);
-		of <<' '<<  p.first << ' ' << p.second.first <<'\t'<< pnt.x<<' '<<pnt.y<<std::endl;
+		pnt=rp::measure::convToCart(p.second.distance, p.first);
+		of <<' '<<  p.first << ' ' << p.second.distance <<'\t'<< pnt.x<<' '<<pnt.y<<std::endl;
 	}
 
 
@@ -451,8 +452,7 @@ auto bind(SQLBuilder  & sb, int const index, int const value)
 	}
 }
 
-void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType * theScan,
-	float tilt)
+void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType2 * theScan)
 {
 
 	//sqlite3_stmt *ppStmt;
@@ -497,16 +497,18 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::Rp
 
 
 	std::stringstream ss;
-	ss<< "insert into sweep(id, angle, distance) VALUES \n";
+	ss<< "insert into sweep(id, angle, distance, tilt) VALUES \n";
 	
 	//insert all this in SQL
 	//if (sv != nullptr);
 		for (auto &reading : *theScan) {
 
-			auto angle = reading.first;
-			auto dist = reading.second.first;
+			auto angle =    reading.first;
+			auto dist = reading.second.distance;
+			auto tilt = reading.second.tilt	;
 
-			auto s = boost::format("(%1%,%2%,%3%),") % id %angle %dist;
+
+			auto s = boost::format("(%1%,%2%,%3%,%4%),") % id %angle %dist %tilt;
 
 	//		SGUP_ODSA(__FUNCTION__,"looping...", s);
 			ss << s << std::endl;
@@ -541,10 +543,27 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::Rp
 }
 
 
-bool RplidarReadingQueue::sendSQL(std::string & sql)
+bool RplidarReadingQueue::sendSQL(std::string & path, std::string & sql)
 {
-	//TODO:this sql stuff
+	SQLBuilder  sb;
+	sb.createOrOpenDatabase(path);
+
+	auto b = sb.sendSQL(sql);
+
+	if (!b)
+	{
+		SGUP_ODSA(__FUNCTION__, __LINE__, "sendsql failed");
+	}
+
 	return false;
+}
+
+void RplidarReadingQueue::setTiltLidar(float tilt)
+{
+
+	//TODO: actuate mechanical action with real tipper
+	RplidarReadingQueue::tilt = tilt;
+
 }
 
 const char * rp::measure::debugPrint()

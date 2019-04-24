@@ -86,7 +86,7 @@ extern "C"
 			return rp::UNKNOWN;
 	}
 
-	DLL_EXPORT void GetScan(rp::RplidarProxy::ScanVecType ** theScan){
+	DLL_EXPORT void GetScan(rp::RplidarProxy::ScanVecType2 ** theScan){
 		
 		if (gpRPInstance)
 			gpRPInstance->getScan(theScan);
@@ -95,7 +95,7 @@ extern "C"
 
 	}
 
-	DLL_EXPORT void GetScanWithExpiry(rp::RplidarProxy::ScanVecType ** theScan, int NewerThanMsec) {
+	DLL_EXPORT void GetScanWithExpiry(rp::RplidarProxy::ScanVecType2 ** theScan, int NewerThanMsec) {
 
 
 		SGUP_ODS(__FUNCTION__)
@@ -111,14 +111,14 @@ extern "C"
 	}
 
 
-	DLL_EXPORT void DestroyScan(rp::RplidarProxy::ScanVecType ** theScan) {
+	DLL_EXPORT void DestroyScan(rp::RplidarProxy::ScanVecType2 ** theScan) {
 
 		delete *theScan;
 		//if (gpRPInstance)
 			//gpRPInstance->getScan(theScan);
 	}
 
-	DLL_EXPORT void DumpScanToFile(std::string &fname ,	rp::RplidarProxy::ScanVecType * theScan, bool append) {
+	DLL_EXPORT void DumpScanToFile(std::string &fname ,	rp::RplidarProxy::ScanVecType2 * theScan, bool append) {
 
 		if (gpRPInstance) {
 			gpRPInstance->dumpScanToFile(fname ,theScan, append);
@@ -127,23 +127,32 @@ extern "C"
 
 	}
 
-	DLL_EXPORT void SavePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType * theScan, float tilt) {
+	DLL_EXPORT void SavePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType2 * theScan, float tilt) {
 
 
 		if (gpRPInstance) {
-			gpRPInstance->savePresentScan(id,database, theScan,tilt);
+			gpRPInstance->savePresentScan(id,database, theScan);
 		}
 
 	}
 
 
-	DLL_EXPORT bool SendSQL(std::string & sql)
+	DLL_EXPORT bool SendSQL(std::string & path, std::string & sql)
 	{
 		if (gpRPInstance) {
-			return gpRPInstance->sendSQL(sql);
+			return gpRPInstance->sendSQL(path, sql);
 		}
 
 	}
 
+
+	DLL_EXPORT void SetTiltLidar(float tilt)
+	{
+
+		if (gpRPInstance) {
+			//return gpRPInstance->sendSQL(path, sql);
+		}
+
+	}
 
 }

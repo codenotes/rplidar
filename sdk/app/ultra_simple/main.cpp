@@ -347,7 +347,7 @@ int main(int argc, const char * argv[]) {
 
 	using  rp::RplidarProxy;
 	//std::vector< std::pair< float, float> >  theScan;
-	rp::RplidarProxy::ScanVecType * scanPointer=nullptr;
+	rp::RplidarProxy::ScanVecType2 * scanPointer=nullptr;
 	int scanID = 0;
 
 	while (1) {

@@ -39,7 +39,8 @@
 struct RplidarReadingQueue {
 	
 	
-	std::map<float, std::pair<_u16, rp::Clock::time_point> > storedRead;
+	//std::map<float, std::pair<_u16, rp::Clock::time_point> > storedRead;
+	std::map<float, rp::beam > storedRead;
 
 
 
@@ -84,6 +85,7 @@ struct RplidarReadingQueue {
 	std::string     opt_com_path;
 	static boost::thread * scanThread;
 	static boost::mutex qMutex;
+	static float tilt;
 
 
 	static rp::enumLidarStatus lidarStatus;
@@ -103,7 +105,7 @@ struct RplidarReadingQueue {
 
 	bool push(rp::measure &m);
 
-	void getScan(rp::RplidarProxy::ScanVecType ** theScan, int msecExpiry=0);
+	void getScan(rp::RplidarProxy::ScanVecType2 ** theScan, int msecExpiry=0);
 
 	~RplidarReadingQueue();
 
@@ -120,16 +122,20 @@ struct RplidarReadingQueue {
 
 	void join();
 
-	void dumpScanToFile(std::string & fname, rp::RplidarProxy::ScanVecType * theScan, bool append);
+	void dumpScanToFile(std::string & fname, rp::RplidarProxy::ScanVecType2 * theScan, bool append);
 
-	void savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType * theScan, float tilt);
+	void savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType2 * theScan);
 
-	bool sendSQL(std::string & sql);
+	bool sendSQL(std::string & path ,std::string & sql);
+
+	void setTiltLidar(float tilt);
 };
 
 
 
 #define INIT_RPLIDAR boost::thread * RplidarReadingQueue::scanThread = nullptr; \
 	boost::mutex RplidarReadingQueue::qMutex; \
-	rp::enumLidarStatus RplidarReadingQueue::lidarStatus=rp::STOPPED;
+	rp::enumLidarStatus RplidarReadingQueue::lidarStatus=rp::STOPPED; \
+	float RplidarReadingQueue::tilt = 0.0f;
+
 
