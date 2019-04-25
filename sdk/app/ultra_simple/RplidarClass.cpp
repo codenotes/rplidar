@@ -10,6 +10,8 @@
 #include <thread>
 
 #include "c:/usr/include/gregutils/Sqlbuilder.h"
+#include <boost/algorithm/string/join.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 
 INIT_RPLIDAR
 INIT_STRGUPLE
@@ -458,7 +460,7 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::Rp
 	//sqlite3_stmt *ppStmt;
 	//std::string sql = "insert into sweep(id, angle, distance) VALUES(?1,?2,?3)";
 
-
+	SGUP_ODSA(__FUNCTION__, "ID:", id);
 
 	//rp::RplidarProxy::ScanVecType * sv;
 
@@ -525,7 +527,7 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::Rp
 		ss << "; ";
 	//	REPLACE_LAST_CHAR_ON_SS(ss, ';')
 
-		SGUP_ODSA(__FUNCTION__, ss.str());
+	//	SGUP_ODSA(__FUNCTION__, ss.str());
 
 
 		auto b=sb.sendSQL(ss.str());
@@ -563,6 +565,59 @@ void RplidarReadingQueue::setTiltLidar(float tilt)
 
 	//TODO: actuate mechanical action with real tipper
 	RplidarReadingQueue::tilt = tilt;
+
+}
+
+
+//returns the penultimate id after the scan retrieved
+int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path, std::optional<int> & id)
+{
+
+	stringstream ss;
+	SQLBuilder  sb;
+	sb.createOrOpenDatabase(path);
+
+	int last_id = -1;
+
+
+	if (id) { //we have passed in a specific id, which is the callers responsability
+		last_id = *id;
+	}
+	else //we want the last
+	{
+
+		ss<<"select max(id) from sweep;";
+		auto b = sb.sendSQL(ss.str());
+
+		if (!b || !sb.results.size())
+		{
+			SGUP_ODSA(__FUNCTION__, __LINE__, "sendsql error failed or no results");
+		}
+		
+
+		last_id=  std::stoi(sb.results[0][0].second);
+
+		SGUP_ODSA(__FUNCTION__, "the last ID is:", last_id);
+
+	}
+
+		ss<<"select angle, distance, tilt from sweep"
+			"where id=="<< last_id;
+
+	auto b = sb.sendSQL(ss.str());
+
+	if (!b)
+	{
+		SGUP_ODSA(__FUNCTION__, __LINE__, "sendsql error failed");
+	}
+
+	//todo::loop through and fill newly created psv;
+
+
+
+	
+	return --last_id;
+
 
 }
 

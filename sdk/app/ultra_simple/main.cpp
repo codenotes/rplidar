@@ -256,6 +256,7 @@ int main(int argc, const char * argv[]) {
 	RP_INIT_DLL_FUNCTIONS(h);
 
 
+	
 
 
 	//test area
@@ -362,8 +363,12 @@ int main(int argc, const char * argv[]) {
 		}*/
 		if (scanPointer == nullptr) continue;
 
-		cout << "scan..." << scanPointer->size()<< endl;
-		rp::RplidarProxy::fnSavePresentScan(scanID++, std::string(DB_PATH), scanPointer);
+		auto sz = scanPointer->size();
+
+		cout << "scan..." << sz<< endl;
+
+		if(sz)
+			rp::RplidarProxy::fnSavePresentScan(scanID++, std::string(DB_PATH), scanPointer);
 	
 		
 	//	rp::RplidarProxy::fnDumpScanToFile(std::string("c:\\temp\\outfile.txt"),scanPointer, true);

@@ -150,7 +150,14 @@ extern "C"
 	{
 
 		if (gpRPInstance) {
-			//return gpRPInstance->sendSQL(path, sql);
+			gpRPInstance->setTiltLidar(tilt);
+		}
+
+	}
+
+	DLL_EXPORT int  GetScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path, std::optional<int> & id) {
+		if (gpRPInstance) {
+			return gpRPInstance->getScanFromDatabase(psv, path, id);
 		}
 
 	}
