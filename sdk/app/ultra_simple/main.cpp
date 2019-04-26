@@ -303,12 +303,21 @@ int main(int argc, const char * argv[]) {
 
 	using namespace std;
 
+	rp::RplidarProxy::ScanVecType2 * scanPointer = nullptr;
+	int scanID = 0;
 
+	auto fnTestDB = [&]() {
+		std::optional<int> num;
+		std::stringstream ss;
+		num = 16;
 
+		int next = rp::RplidarProxy::fnGetScanFromDatabase(&scanPointer, std::string(DB_PATH), num);
+		rp::RplidarProxy::fnSVToString(scanPointer, ss);
+		
+		cout << ss.str();
 
-
-
-
+		cout << endl <<"next:"<< next << endl;
+	};
 
 
 
@@ -348,8 +357,9 @@ int main(int argc, const char * argv[]) {
 
 	using  rp::RplidarProxy;
 	//std::vector< std::pair< float, float> >  theScan;
-	rp::RplidarProxy::ScanVecType2 * scanPointer=nullptr;
-	int scanID = 0;
+	
+
+	
 
 	while (1) {
 		//cnt = rp::RplidarProxy::fnGetMeasure(m);

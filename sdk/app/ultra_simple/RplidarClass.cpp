@@ -601,7 +601,9 @@ int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** p
 
 	}
 
-		ss<<"select angle, distance, tilt from sweep"
+	ss.str("");
+
+	ss<<"select angle, distance, tilt from sweep "
 			"where id=="<< last_id;
 
 	auto b = sb.sendSQL(ss.str());
@@ -627,8 +629,20 @@ int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** p
 		SGUP_ODSA(__FUNCTION__, "results empty? Strange...");
 	}
 
-	
-	return --last_id;
+
+
+	ss.str((boost::format("select DISTINCT id from sweep where id < %1% order by id DESC LIMIT 1") % last_id).str().c_str() );
+
+	EXECSQL(sb, ss.str());
+
+	if (!sb.sendSQL(ss.str()))	{
+		SGUP_ODSA(__FUNCTION__, __LINE__, "sendsql error failed");
+		last_id = -1;
+	}
+	else
+		last_id = std::stoi( sb.results[0][0].second );
+
+	return last_id;
 
 
 }

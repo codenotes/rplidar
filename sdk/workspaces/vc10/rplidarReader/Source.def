@@ -16,3 +16,4 @@ SavePresentScan
 SendSQL
 SetTiltLidar
 GetScanFromDatabase
+SVToString

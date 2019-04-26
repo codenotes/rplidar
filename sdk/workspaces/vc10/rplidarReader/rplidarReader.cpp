@@ -156,9 +156,27 @@ extern "C"
 	}
 
 	DLL_EXPORT int  GetScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path, std::optional<int> & id) {
-		if (gpRPInstance) {
-			return gpRPInstance->getScanFromDatabase(psv, path, id);
+	
+		return RplidarReadingQueue::getScanFromDatabase(psv, path, id);
+		
+
+	}
+
+	DLL_EXPORT int  SVToString(rp::RplidarProxy::ScanVecType2 * theScan, std::stringstream  & ss) {
+		
+		if (theScan == nullptr) {
+
+			SGUP_ODSA(__FUNCTION__, "no scan sent in...");
+			return 0;
 		}
+
+
+		for (auto &p : *theScan) {
+			
+			ss << p.first << ":   ," << p.second.distance << "  ,  " <<p.second.tilt   << std::endl;
+		}
+
+		return theScan->size();
 
 	}
 
