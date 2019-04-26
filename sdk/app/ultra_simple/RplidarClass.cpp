@@ -168,7 +168,7 @@ void RplidarReadingQueue::getScan(rp::RplidarProxy::ScanVecType2 ** theScan, int
 			if (lived > msecExpiry) { //it is old, skip it
 				//(**theScan).erase(itr);
 
-				SGUP_ODS(__FUNCTION__, "old ray detected, deleting:", x.first, x.second.first) //angle/distance
+				SGUP_ODS(__FUNCTION__, "old ray detected, deleting:", x.first, x.second.distance) //angle/distance
 			}
 			else
 			{
@@ -612,8 +612,20 @@ int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** p
 	}
 
 	//todo::loop through and fill newly created psv;
+	*psv = new rp::RplidarProxy::ScanVecType2;
 
-
+	if (!sb.results.empty()) {
+		for (auto & r : sb.results) {
+			(*psv)->push_back(std::pair<float, rp::beam>(std::stof(r[0].second),
+				rp::beam(std::stoi(  r[1].second),std::stof( r[2].second))
+				)
+				);
+		}
+	}
+	else
+	{
+		SGUP_ODSA(__FUNCTION__, "results empty? Strange...");
+	}
 
 	
 	return --last_id;
