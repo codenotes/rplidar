@@ -137,7 +137,7 @@ extern "C"
 	}
 
 
-	DLL_EXPORT bool SendSQL(std::string & path, std::string & sql)
+	DLL_EXPORT bool SendSQL(std::string & path, std::shared_ptr<std::string> & sql)
 	{
 	//	if (gpRPInstance) {
 			return gpRPInstance->sendSQL(path, sql);

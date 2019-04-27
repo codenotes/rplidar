@@ -545,10 +545,11 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::Rp
 }
 
 
-bool RplidarReadingQueue::sendSQL(std::string & path, std::string & sql)
+bool RplidarReadingQueue::sendSQL(std::string & path, std::shared_ptr<std::string>  &sql)
 {
 	SQLBuilder  sb;
 	sb.createOrOpenDatabase(path);
+	std::string temp;
 
 	if (path.empty()) {
 		SGUP_ODSA(__FUNCTION__, __LINE__, "database path empty, error");
@@ -557,7 +558,7 @@ bool RplidarReadingQueue::sendSQL(std::string & path, std::string & sql)
 
 	SGUP_ODSA(__FUNCTION__, __LINE__, "sending sql:",sql);
 
-	auto b = sb.sendSQL(sql);
+	auto b = sb.sendSQL(*sql);
 
 	if (!b)
 	{
@@ -566,10 +567,17 @@ bool RplidarReadingQueue::sendSQL(std::string & path, std::string & sql)
 	}
 
 	//not lets convert the results to a big string and return them in sql
-	sql.clear();
-	sql = sb.stringifyResults();
-//	SGUP_ODSA(__FUNCTION__, "stringify returned:",sql);
+//	sql.clear();
+	SGUP_ODSA(__FUNCTION__, "stringify called for:",sql);
+	
+	//temp.assign(sb.stringifyResults().c_str());
+	//sql->clear();
+//	sql->assign(sb.stringifyResults().c_str());
+	std::shared_ptr<std::string> thestring(new std::string(sb.stringifyResults()), rp::RplidarProxy::deleter);
 
+	sql = thestring;
+
+	SGUP_ODSA(__FUNCTION__, "stringify returned", *thestring);
 	return true;
 }
 

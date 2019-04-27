@@ -226,6 +226,7 @@ INIT_STRGUPLE
 //
 //	}
 //}
+void deleter(std::string * s) { delete s; }
 
 int main(int argc, const char * argv[]) {
     const char * opt_com_path = NULL;
@@ -319,9 +320,14 @@ int main(int argc, const char * argv[]) {
 		cout << endl <<"next:"<< next << endl;
 	};
 
+	std::string sql("select * from vectors;");
 
+	std::shared_ptr<std::string> thestring(new std::string(sql), deleter);
 
+	rp::RplidarProxy::fnSendSQL(std::string(DB_PATH), thestring);
 
+	cout << *thestring << endl;
+	return 0;
 	//auto fnStart = loadDllFunc<int(float, float, int)>(dllloc.c_str(), "StartLidar",h);
 	//auto fnGet = loadDllFunc<int(rp::measure&)>(dllloc.c_str(), "GetMeasure",h);
 	//auto fnStop = loadDllFunc<int(void)>(dllloc.c_str(), "StopLidar",h);

@@ -126,7 +126,7 @@ struct RplidarReadingQueue {
 
 	static void savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType2 * theScan);
 
-	bool sendSQL(std::string & path ,std::string & sql);
+	bool sendSQL(std::string & path , std::shared_ptr<std::string> & sql);
 
 	void setTiltLidar(float tilt);
 	//returns next lowest id for sweep, pass in an id::none if you want latest and to start the chain backward LIFO
