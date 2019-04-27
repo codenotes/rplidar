@@ -15,5 +15,6 @@ DestroyGetComPortLidar
 SavePresentScan
 SendSQL
 SetTiltLidar
-GetScanFromDatabase
 SVToString
+GetScanFromDatabase
+SaveScanToDatabase

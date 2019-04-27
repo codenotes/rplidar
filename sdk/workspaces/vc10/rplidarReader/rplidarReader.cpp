@@ -139,9 +139,9 @@ extern "C"
 
 	DLL_EXPORT bool SendSQL(std::string & path, std::string & sql)
 	{
-		if (gpRPInstance) {
+	//	if (gpRPInstance) {
 			return gpRPInstance->sendSQL(path, sql);
-		}
+		//}
 
 	}
 
@@ -155,12 +155,6 @@ extern "C"
 
 	}
 
-	DLL_EXPORT int  GetScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path, std::optional<int> & id) {
-	
-		return RplidarReadingQueue::getScanFromDatabase(psv, path, id);
-		
-
-	}
 
 	DLL_EXPORT int  SVToString(rp::RplidarProxy::ScanVecType2 * theScan, std::stringstream  & ss) {
 		
@@ -179,5 +173,21 @@ extern "C"
 		return theScan->size();
 
 	}
+
+	DLL_EXPORT int  GetScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path, std::optional<int> & id) {
+
+		return RplidarReadingQueue::getScanFromDatabase(psv, path, id);
+
+
+	}
+
+	DLL_EXPORT int  SaveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv, std::string & path, std::optional<int> & id) {
+
+		return RplidarReadingQueue::saveScanToDatabase(psv, path, id);
+
+
+	}
+
+
 
 }

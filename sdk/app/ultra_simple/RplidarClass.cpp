@@ -550,14 +550,27 @@ bool RplidarReadingQueue::sendSQL(std::string & path, std::string & sql)
 	SQLBuilder  sb;
 	sb.createOrOpenDatabase(path);
 
+	if (path.empty()) {
+		SGUP_ODSA(__FUNCTION__, __LINE__, "database path empty, error");
+		return false;
+	}
+
+	SGUP_ODSA(__FUNCTION__, __LINE__, "sending sql:",sql);
+
 	auto b = sb.sendSQL(sql);
 
 	if (!b)
 	{
 		SGUP_ODSA(__FUNCTION__, __LINE__, "sendsql failed");
+		return false;
 	}
 
-	return false;
+	//not lets convert the results to a big string and return them in sql
+	sql.clear();
+	sql = sb.stringifyResults();
+//	SGUP_ODSA(__FUNCTION__, "stringify returned:",sql);
+
+	return true;
 }
 
 void RplidarReadingQueue::setTiltLidar(float tilt)
@@ -570,7 +583,8 @@ void RplidarReadingQueue::setTiltLidar(float tilt)
 
 
 //returns the penultimate id after the scan retrieved
-int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path, std::optional<int> & id)
+int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path,
+	std::optional<int> & id)
 {
 
 	stringstream ss;
@@ -644,6 +658,54 @@ int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** p
 
 	return last_id;
 
+
+}
+
+int RplidarReadingQueue::saveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv, std::string & path, 
+	std::optional<int> & id)
+{
+	stringstream ss;
+	SQLBuilder  sb;
+	sb.createOrOpenDatabase(path);
+	int last;
+
+	if (!id){
+		auto lid = getLastIDFromSweep(path);
+		last++;
+	}
+	else
+	{
+		last = *id;
+	}
+
+	savePresentScan(last, path, psv);
+
+	return last;
+	
+}
+
+std::optional<int> RplidarReadingQueue::getLastIDFromSweep(std::string & path)
+{
+	int last_id = -1;
+
+	std::stringstream ss;
+	SQLBuilder  sb;
+	sb.createOrOpenDatabase(path);
+
+	ss << "select max(id) from sweep;";
+	auto b = sb.sendSQL(ss.str());
+
+	if (!b || !sb.results.size())
+	{
+		SGUP_ODSA(__FUNCTION__, __LINE__, "sendsql error failed or no results");
+		return std::nullopt;
+	}
+
+
+	last_id = std::stoi(sb.results[0][0].second);
+
+	SGUP_ODSA(__FUNCTION__, "the last ID is:", last_id);
+	return std::optional<int>(last_id);
 
 }
 
