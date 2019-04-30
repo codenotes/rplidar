@@ -193,13 +193,17 @@ extern "C"
 		rp::RplidarProxy::scanRange rng, bool loop, bool reset) {
 	//										
 		static rp::RplidarProxy::scanRange theRange;
-		static int lastIndex = -1;
+
 
 		SQLBuilder  sb;
 		sb.createOrOpenDatabase(path);
 
+		auto rst = [&]() {
+			theRange = std::nullopt;
+			SGUP_ODSA(__FUNCTION__, "reset called");
+		};
 
-		if (reset) { theRange = std::nullopt; lastIndex = -1; SGUP_ODSA(__FUNCTION__, "reset called"); }
+		if (reset) { rst(); }
 
 		if (!theRange) //this is the first call of the function, because theRange is static optional and has not been initialized
 		{
@@ -223,7 +227,16 @@ extern "C"
 		}
 		else //repeated call where theRange is properly set, ie, theRAnge IS valid
 		{
-			
+			//if max < min, because I decrement theRange->first and use it as a last index
+			if (theRange->first < theRange->second) {
+				SGUP_ODSA(__FUNCTION__, "past minimum, returning, should either reset or loop");
+
+				if (loop) {
+					rst();
+				}
+
+				return 0;
+			}
 
 			auto sql =
 				boost::format("select id, angle, distance, tilt from sweep where id == %1%") % theRange->first--; //count backward from max
@@ -235,7 +248,7 @@ extern "C"
 
 			if (sqlite3_prepare_v2(sb.gdb, sql.str().c_str(), -1, &statement, 0) == SQLITE_OK)
 			{
-				int cols = sqlite3_column_count(statement);
+				//int cols = sqlite3_column_count(statement);
 				int result = 0;
 				while (true)
 				{
@@ -270,7 +283,3 @@ extern "C"
 
 }
 
-#if 0
-
-
-#endif
