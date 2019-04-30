@@ -5,7 +5,7 @@
 //#include <iostream>
 //#include <numeric>
 //#include <vector>
-
+#include <future>
 #include "RplidarClass.h"
 
 //#include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
@@ -228,6 +228,32 @@ INIT_STRGUPLE
 //}
 void deleter(std::string * s) { delete s; }
 
+
+void recorder(int msec, const std::string & path) {
+
+	using thing = rp::RplidarProxy::ScanVecType2 *;
+
+	auto fn = [&](int sleepfor)->thing {
+
+			   
+		std::this_thread::sleep_for(std::chrono::milliseconds(sleepfor));
+		return nullptr;
+	};
+
+	try {
+		while (true) {
+			std::future<thing> result_future = std::async(std::launch::deferred, fn, 500);
+		}
+	}
+	catch (...)
+	{
+		cout << "exception thrown!" << endl;
+	}
+
+
+}
+
+
 int main(int argc, const char * argv[]) {
     const char * opt_com_path = NULL;
     _u32         baudrateArray[2] = {115200, 256000};
@@ -320,14 +346,14 @@ int main(int argc, const char * argv[]) {
 		cout << endl <<"next:"<< next << endl;
 	};
 
-	std::string sql("select * from vectors;");
+	/*std::string sql("select * from vectors;");
 
 	std::shared_ptr<std::string> thestring(new std::string(sql), deleter);
 
 	rp::RplidarProxy::fnSendSQL(std::string(DB_PATH), thestring);
 
 	cout << *thestring << endl;
-	return 0;
+	return 0;*/
 	//auto fnStart = loadDllFunc<int(float, float, int)>(dllloc.c_str(), "StartLidar",h);
 	//auto fnGet = loadDllFunc<int(rp::measure&)>(dllloc.c_str(), "GetMeasure",h);
 	//auto fnStop = loadDllFunc<int(void)>(dllloc.c_str(), "StopLidar",h);
@@ -357,15 +383,20 @@ int main(int argc, const char * argv[]) {
 	cout << "starting lidar, press escape to quit reading" << endl;
 
 
-	rp::RplidarProxy::fnStartLidarWithParams(0, 0, 1000, 256000, (*res).c_str()   ) ;
+	rp::RplidarProxy::fnStartLidarWithParams(0, 0, 1000, 256000,(*res).c_str()   );
 	rp::measure m;
 	int cnt;
 
 	using  rp::RplidarProxy;
 	//std::vector< std::pair< float, float> >  theScan;
 	
+	cout << "waiting..." << endl;
 
-	
+	std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+
+	cout << "done waiting..." << endl;
+
+	std::string path(DB_PATH);
 
 	while (1) {
 		//cnt = rp::RplidarProxy::fnGetMeasure(m);
@@ -383,8 +414,12 @@ int main(int argc, const char * argv[]) {
 
 		cout << "scan..." << sz<< endl;
 
-		if(sz)
-			rp::RplidarProxy::fnSavePresentScan(scanID++, std::string(DB_PATH), scanPointer);
+		if (sz) {
+			//rp::RplidarProxy::fnSavePresentScan(scanID++, std::string(DB_PATH), scanPointer);
+			cout << "would do scan to database..." << endl;
+			rp::RplidarProxy::fnSaveScanToDatabase(scanPointer, path, std::optional<int>());
+
+		}
 	
 		
 	//	rp::RplidarProxy::fnDumpScanToFile(std::string("c:\\temp\\outfile.txt"),scanPointer, true);

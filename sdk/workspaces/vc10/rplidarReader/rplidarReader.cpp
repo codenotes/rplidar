@@ -98,7 +98,7 @@ extern "C"
 	DLL_EXPORT void GetScanWithExpiry(rp::RplidarProxy::ScanVecType2 ** theScan, int NewerThanMsec) {
 
 
-		SGUP_ODS(__FUNCTION__)
+	//	SGUP_ODSA(__FUNCTION__)
 
 		if (gpRPInstance) {
 			gpRPInstance->getScan(theScan,NewerThanMsec);
@@ -186,6 +186,34 @@ extern "C"
 		return RplidarReadingQueue::saveScanToDatabase(psv, path, id);
 
 
+	}
+
+	DLL_EXPORT int  GetRangeOfScansFromDatabase(rp::RplidarProxy::ScanVecType2 ** sv, std::string & path, 
+		rp::RplidarProxy::scanRange rng, bool loop, bool reset) {
+	//										
+		static rp::RplidarProxy::scanRange theRange;
+		static int lastIndex = -1;
+
+		if (reset) { theRange = std::nullopt; lastIndex = -1; }
+
+		if (!theRange) //this is the first call of the function, because theRange is static optional and has not been initialized
+		{
+
+			if (rng) //we are intended to move through a range they gave us
+			{
+				theRange = rng;
+			}
+			else { //means we should go LIFO from max to min of whatever is in the database
+				//theRange->first= 
+			}
+		}
+		else //repeated call where theRange is properly set
+		{
+
+
+		}
+
+		return 0;
 	}
 
 

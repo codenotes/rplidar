@@ -317,9 +317,9 @@ bool RplidarReadingQueue::run()
 {
 	//		signal(SIGINT, ctrlc);
 	//SGUP_ODS(__FUNCTION__)
-	SGUP_ODS(__FUNCTION__, "COMPORT RECEIVED:", opt_com_path)
 
 	if (!initLidat()) return false;
+	SGUP_ODS(__FUNCTION__, "COMPORT RECEIVED:", opt_com_path)
 
 	SGUP_ODS(__FUNCTION__, "initdat worked?")
 
@@ -512,7 +512,7 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::Rp
 
 			auto s = boost::format("(%1%,%2%,%3%,%4%),") % id %angle %dist %tilt;
 
-	//		SGUP_ODSA(__FUNCTION__,"looping...", s);
+		//	SGUP_ODSA(__FUNCTION__,"looping...", s);
 			ss << s << std::endl;
 
 		/*	sqlite3_bind_double( ppStmt,1, id);
@@ -608,7 +608,7 @@ int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** p
 	else //we want the last
 	{
 
-		ss<<"select max(id) from sweep;";
+		ss<<"select ifnull(max(id),0) from sweep;";
 		auto b = sb.sendSQL(ss.str());
 
 		if (!b || !sb.results.size())
@@ -675,16 +675,20 @@ int RplidarReadingQueue::saveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv
 	stringstream ss;
 	SQLBuilder  sb;
 	sb.createOrOpenDatabase(path);
-	int last;
+	int last=0;
 
 	if (!id){
 		auto lid = getLastIDFromSweep(path);
-		last++;
+		last = *lid;
+		SGUP_ODSA(__FUNCTION__, "we have an empty id:", last);
 	}
 	else
 	{
 		last = *id;
+		SGUP_ODSA(__FUNCTION__, "we have an FULL id:", last);
 	}
+
+	last++;
 
 	savePresentScan(last, path, psv);
 
@@ -700,7 +704,7 @@ std::optional<int> RplidarReadingQueue::getLastIDFromSweep(std::string & path)
 	SQLBuilder  sb;
 	sb.createOrOpenDatabase(path);
 
-	ss << "select max(id) from sweep;";
+	ss << "select ifnull(max(id),0) from sweep;";
 	auto b = sb.sendSQL(ss.str());
 
 	if (!b || !sb.results.size())
@@ -708,9 +712,9 @@ std::optional<int> RplidarReadingQueue::getLastIDFromSweep(std::string & path)
 		SGUP_ODSA(__FUNCTION__, __LINE__, "sendsql error failed or no results");
 		return std::nullopt;
 	}
-
-
+	
 	last_id = std::stoi(sb.results[0][0].second);
+	
 
 	SGUP_ODSA(__FUNCTION__, "the last ID is:", last_id);
 	return std::optional<int>(last_id);

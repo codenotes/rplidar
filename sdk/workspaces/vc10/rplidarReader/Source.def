@@ -18,3 +18,4 @@ SetTiltLidar
 SVToString
 GetScanFromDatabase
 SaveScanToDatabase
+GetRangeOfScansFromDatabase
