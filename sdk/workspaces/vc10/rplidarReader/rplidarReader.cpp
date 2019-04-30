@@ -6,6 +6,7 @@
 #include "..\ultra_simple\RplidarClass.h"
 #include <chrono>
 #include <thread>
+#include "c:/usr/include/gregutils/Sqlbuilder.h"
 //#define DLL_EXPORT __declspec(dllexport)
 
 RplidarReadingQueue * gpRPInstance = nullptr;
@@ -194,22 +195,71 @@ extern "C"
 		static rp::RplidarProxy::scanRange theRange;
 		static int lastIndex = -1;
 
-		if (reset) { theRange = std::nullopt; lastIndex = -1; }
+		SQLBuilder  sb;
+		sb.createOrOpenDatabase(path);
+
+
+		if (reset) { theRange = std::nullopt; lastIndex = -1; SGUP_ODSA(__FUNCTION__, "reset called"); }
 
 		if (!theRange) //this is the first call of the function, because theRange is static optional and has not been initialized
 		{
+			SGUP_ODSA(__FUNCTION__, "First call");
 
 			if (rng) //we are intended to move through a range they gave us
 			{
+				SGUP_ODSA(__FUNCTION__, "Setting range passed in:", rng->first, rng->second);
 				theRange = rng;
 			}
 			else { //means we should go LIFO from max to min of whatever is in the database
 				//theRange->first= 
+				auto sql = "select ifnull(max(id),0),ifnull(min(id),0) from sweep;";
+				sb.execSQL(sql);
+				theRange->first = std::stoi(sb.results[0][0].second);
+				theRange->second = std::stoi(sb.results[0][1].second);
+				SGUP_ODSA(__FUNCTION__, "max:", theRange->first, "min:", theRange->second);
+
+				
 			}
 		}
-		else //repeated call where theRange is properly set
+		else //repeated call where theRange is properly set, ie, theRAnge IS valid
 		{
+			
 
+			auto sql =
+				boost::format("select id, angle, distance, tilt from sweep where id == %1%") % theRange->first--; //count backward from max
+
+			*sv = new rp::RplidarProxy::ScanVecType2;
+
+			
+			sqlite3_stmt *statement;
+
+			if (sqlite3_prepare_v2(sb.gdb, sql.str().c_str(), -1, &statement, 0) == SQLITE_OK)
+			{
+				int cols = sqlite3_column_count(statement);
+				int result = 0;
+				while (true)
+				{
+					result = sqlite3_step(statement);
+
+					if (result == SQLITE_ROW)
+					{
+
+						auto id =		sqlite3_column_int(statement, 0);
+						auto angle =	sqlite3_column_double(statement, 1);
+						auto distance = sqlite3_column_int(statement, 2 );
+						auto tilt =		sqlite3_column_double(statement, 3);
+
+						(*sv)->push_back({ angle, rp::beam((_u16)distance, tilt) });
+
+					}
+					else
+					{
+						break;
+					}
+				}
+
+				sqlite3_finalize(statement);
+			}
 
 		}
 
@@ -219,3 +269,8 @@ extern "C"
 
 
 }
+
+#if 0
+
+
+#endif
