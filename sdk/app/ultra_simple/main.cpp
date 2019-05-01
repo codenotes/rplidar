@@ -13,6 +13,9 @@
 //#include <boost/circular_buffer.hpp>
 //#include <boost/thread.hpp>
 
+#include "\usr\include\GregUtils\ansi_utils.h"
+
+
 #define DB_PATH R"(C:\usr\data\cirrus.db)"
 
 #ifndef _countof
@@ -260,6 +263,10 @@ int main(int argc, const char * argv[]) {
     _u32         opt_com_baudrate = 0;
     u_result     op_result; 
 
+	ANSI_Util::EnableVTMode();
+
+
+
 	std::string dllloc = R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)";
 	 
 #ifdef _DEBUG
@@ -267,16 +274,12 @@ int main(int argc, const char * argv[]) {
 #else
 	HMODULE h = LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Release\rplidarReader.dll)");
 #endif
+
 	
-	
-	auto proc=GetProcAddress(h, "StartLidar");
-	auto test= loadDllFunc<rp::RplidarProxy::GetScanWithExpiryT>("GetScanWithExpiry", h); 
-
-
-
-
+//	auto proc=GetProcAddress(h, "StartLidar");
+//	auto test= loadDllFunc<rp::RplidarProxy::GetScanWithExpiryT>("GetScanWithExpiry", h); 
 	//auto fnTest = std::function<int(void)>(proc);
-	auto fnTest = loadDllFunc<int(void)>( "test",h);
+	//auto fnTest = loadDllFunc<int(void)>( "test",h);
 
 	//cout << fnTest() << endl;
 	
@@ -332,6 +335,7 @@ int main(int argc, const char * argv[]) {
 
 	rp::RplidarProxy::ScanVecType2 * scanPointer = nullptr;
 	int scanID = 0;
+	std::string path(DB_PATH);
 
 	auto fnTestDB = [&]() {
 		std::optional<int> num;
@@ -365,101 +369,164 @@ int main(int argc, const char * argv[]) {
 	rp::RplidarProxy::fnGetLidarStatus = loadDllFunc<rp::RplidarProxy::GetLidarStatusT>("GetLidarStatus", h);
 	rp::RplidarProxy::fnStartLidarWithParams = loadDllFunc<rp::RplidarProxy::StartLidarWithParamsT>("StartLidarWithParams", h);*/
 
-	auto res=rp::RplidarProxy::findRplidarComPort();
+	auto fnInit = [&]() {
 
-	if (!res) {
-		cout << "didnt find a Silicon COM port, so rplidar not plugged in or something" << endl;
-		return 1;
-	}
-	else
-	{
-		cout << "LIDAR found on:" << *res << endl;
-	}
-	
-	//cout << "Loading cirrus.db:" << DB_PATH << endl;
+		auto res = rp::RplidarProxy::findRplidarComPort();
 
-	
-	   
-	cout << "starting lidar, press escape to quit reading" << endl;
-
-
-	rp::RplidarProxy::fnStartLidarWithParams(0, 0, 1000, 256000,(*res).c_str()   );
-	rp::measure m;
-	int cnt;
-
-	using  rp::RplidarProxy;
-	//std::vector< std::pair< float, float> >  theScan;
-	
-	cout << "waiting..." << endl;
-
-	std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-
-	cout << "done waiting..." << endl;
-
-	std::string path(DB_PATH);
-
-	while (1) {
-		//cnt = rp::RplidarProxy::fnGetMeasure(m);
-	//	rp::RplidarProxy::fnGetScan(&scanPointer);
-
-		rp::RplidarProxy::fnGetScanWithExpiry(&scanPointer,1500);
-
-
-	/*	for (auto &i : theScan) {
-			cout << i.first << ":" << i.second << endl;
-		}*/
-		if (scanPointer == nullptr) continue;
-
-		auto sz = scanPointer->size();
-
-		cout << "scan..." << sz<< endl;
-
-		if (sz) {
-			//rp::RplidarProxy::fnSavePresentScan(scanID++, std::string(DB_PATH), scanPointer);
-			cout << "would do scan to database..." << endl;
-			rp::RplidarProxy::fnSaveScanToDatabase(scanPointer, path, std::optional<int>());
-
+		if (!res) {
+			cout << "didnt find a Silicon COM port, so rplidar not plugged in or something" << endl;
+			return 1;
 		}
-	
-		
-	//	rp::RplidarProxy::fnDumpScanToFile(std::string("c:\\temp\\outfile.txt"),scanPointer, true);
-	/*	if (isKeyDown(VK_PAUSE)) {
-			for (auto &i : *scanPointer) {
-				cout << i.first << ":" << i.second << endl;
+		else
+		{
+			cout << "LIDAR found on:" << *res << endl;
+		}
+
+		//cout << "Loading cirrus.db:" << DB_PATH << endl;
+
+
+
+		cout << "starting lidar, press escape to quit reading" << endl;
+
+
+		rp::RplidarProxy::fnStartLidarWithParams(0, 0, 1000, 256000, (*res).c_str());
+		rp::measure m;
+		int cnt;
+
+		using  rp::RplidarProxy;
+		//std::vector< std::pair< float, float> >  theScan;
+
+		cout << "waiting..." << endl;
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+
+		cout << "done waiting..." << endl;
+
+
+	};
+
+
+	auto fnReader = [&]() {
+
+		while (1) {
+			//cnt = rp::RplidarProxy::fnGetMeasure(m);
+		//	rp::RplidarProxy::fnGetScan(&scanPointer);
+
+			rp::RplidarProxy::fnGetScanWithExpiry(&scanPointer, 1500);
+
+
+			/*	for (auto &i : theScan) {
+					cout << i.first << ":" << i.second << endl;
+				}*/
+			if (scanPointer == nullptr) continue;
+
+			auto sz = scanPointer->size();
+
+			cout << "scan..." << sz << endl;
+
+			if (sz) {
+				//rp::RplidarProxy::fnSavePresentScan(scanID++, std::string(DB_PATH), scanPointer);
+				cout << "would do scan to database..." << endl;
+				rp::RplidarProxy::fnSaveScanToDatabase(scanPointer, path, std::optional<int>());
+
 			}
 
-			}*/
+
+			//	rp::RplidarProxy::fnDumpScanToFile(std::string("c:\\temp\\outfile.txt"),scanPointer, true);
+			/*	if (isKeyDown(VK_PAUSE)) {
+					for (auto &i : *scanPointer) {
+						cout << i.first << ":" << i.second << endl;
+					}
+
+					}*/
 
 
-	
 
-		//if(cnt!=-1)
-		//	cout << "count:" << cnt << "\t " << m.debugPrint() << endl;
 
-		if (isKeyDown(VK_ESCAPE)) {
-			cout << "escape pressed, shutting down..." << endl;
+					//if(cnt!=-1)
+					//	cout << "count:" << cnt << "\t " << m.debugPrint() << endl;
 
-			//for (auto &i : *scanPointer) {
-			////	auto p = rp::measure::convertAngleDist(i.first, i.second);
-			//	cout <<i.first<<"->"<<  i.second << endl;
-			//	//roundf(p.first * 10) / 10
-			//}
+			if (isKeyDown(VK_ESCAPE)) {
+				cout << "escape pressed, shutting down..." << endl;
 
-			break;
+				//for (auto &i : *scanPointer) {
+				////	auto p = rp::measure::convertAngleDist(i.first, i.second);
+				//	cout <<i.first<<"->"<<  i.second << endl;
+				//	//roundf(p.first * 10) / 10
+				//}
+
+				break;
+			}
+
+			rp::RplidarProxy::fnDestroyScan(&scanPointer);
+			//print out everything
+
+
+
+
+
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 
-		rp::RplidarProxy::fnDestroyScan(&scanPointer);
-		//print out everything
+	};
+
+	auto fnDBReader = [&](std::optional< std::pair<int, int> > opt = std::nullopt, bool loop = false, bool rst = false, int delayMS = 500) {
+
+		while (1) {
+			
+			auto scanRet=rp::RplidarProxy::fnGetRangeOfScansFromDatabase(&scanPointer, path, opt, loop, rst);
 
 
-		
+			if (scanPointer == nullptr) {
+				cout << "null scan, retval:" <<scanRet<< endl;
+			}
+			else
+			{
+
+				auto sz = scanPointer->size();
+
+				cout << "db read size:" << sz <<" scanRet:"<<scanRet<< endl;
+
+				if (sz) {
+
+				cout << RED_DEF << scanPointer->begin()->second.debugID << RESET_DEF << endl;
+					//for (const auto & r : *scanPointer) {
+					//	cout << RED_DEF<< r.second.debugID << RESET_DEF<<", ";
+					//}
+
+				}
+				else
+				{
+					cout << YELLOW_DEF << "size 0 so must be no scan at that ID" << RESET_DEF << endl;
+				}
+
+				cout << "--" << endl;
+
+			
+				rp::RplidarProxy::fnDestroyScan(&scanPointer);
+
+			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(delayMS));
+			if (isKeyDown(VK_ESCAPE)) {
+				cout << "escape pressed, shutting down..." << endl;
+				break;
+			}
+		}
 
 
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	}
+	};
 
-	
+
+	//fnInit(); //starts lidar up
+	//fnReader();
+
+	//fnDBReader(std::pair<int, int>{6,2},true,false, 250);
+	fnDBReader(std::nullopt, true, false, 250);
+
+
 	cout << "Waiting for reported shutdown..." << endl;
 	rp::RplidarProxy::fnStopLidar();
 	   	

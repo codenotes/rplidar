@@ -114,6 +114,18 @@ extern "C"
 
 	DLL_EXPORT void DestroyScan(rp::RplidarProxy::ScanVecType2 ** theScan) {
 
+		if (*theScan==nullptr) {
+			SGUP_ODSA(__FUNCTION__, "deleting a *scan that is nullptr! returning...");
+			return;
+		}
+
+		if (theScan == nullptr) {
+			SGUP_ODSA(__FUNCTION__, "deleting a scan that is nullptr! returning...");
+			return;
+		}
+
+
+
 		delete *theScan;
 		//if (gpRPInstance)
 			//gpRPInstance->getScan(theScan);
@@ -192,36 +204,46 @@ extern "C"
 	DLL_EXPORT int  GetRangeOfScansFromDatabase(rp::RplidarProxy::ScanVecType2 ** sv, std::string & path, 
 		rp::RplidarProxy::scanRange rng, bool loop, bool reset) {
 	//										
-		static rp::RplidarProxy::scanRange theRange;
+		static rp::RplidarProxy::scanRange theRange=std::nullopt;
 
+
+		SGUP_ODSA(__FUNCTION__, "!!!hasvalue:", theRange.has_value());
 
 		SQLBuilder  sb;
 		sb.createOrOpenDatabase(path);
 
 		auto rst = [&]() {
 			theRange = std::nullopt;
+			*sv = nullptr;
 			SGUP_ODSA(__FUNCTION__, "reset called");
+			//return -1;
 		};
 
-		if (reset) { rst(); }
+		if (reset) { rst();   return -1; }
 
-		if (!theRange) //this is the first call of the function, because theRange is static optional and has not been initialized
+		
+
+		if (theRange.has_value()==false) //this is the first call of the function, because theRange is static optional and has not been initialized
 		{
-			SGUP_ODSA(__FUNCTION__, "First call");
+			SGUP_ODSA(__FUNCTION__, "HASVAL:",theRange.has_value(), "First call");
 
 			if (rng) //we are intended to move through a range they gave us
 			{
 				SGUP_ODSA(__FUNCTION__, "Setting range passed in:", rng->first, rng->second);
 				theRange = rng;
+				*sv = nullptr;// don't expect a result set because this is first call
 			}
 			else { //means we should go LIFO from max to min of whatever is in the database
 				//theRange->first= 
 				auto sql = "select ifnull(max(id),0),ifnull(min(id),0) from sweep;";
 				sb.execSQL(sql);
-				theRange->first = std::stoi(sb.results[0][0].second);
-				theRange->second = std::stoi(sb.results[0][1].second);
-				SGUP_ODSA(__FUNCTION__, "max:", theRange->first, "min:", theRange->second);
 
+
+				theRange = std::pair<int,int>(std::stoi(sb.results[0][0].second), std::stoi(sb.results[0][1].second));
+				//theRange->first = std::stoi(sb.results[0][0].second);
+				//theRange->second = std::stoi(sb.results[0][1].second);
+				SGUP_ODSA(__FUNCTION__, "max:", theRange->first, "min:", theRange->second);
+				*sv = nullptr; 
 				
 			}
 		}
@@ -230,16 +252,17 @@ extern "C"
 			//if max < min, because I decrement theRange->first and use it as a last index
 			if (theRange->first < theRange->second) {
 				SGUP_ODSA(__FUNCTION__, "past minimum, returning, should either reset or loop");
+				*sv = nullptr;
 
 				if (loop) {
 					rst();
 				}
 
-				return 0;
+				
 			}
 
 			auto sql =
-				boost::format("select id, angle, distance, tilt from sweep where id == %1%") % theRange->first--; //count backward from max
+				boost::format("select  id, angle, distance, tilt from sweep where id == %1%") % theRange->first--; //count backward from max
 
 			*sv = new rp::RplidarProxy::ScanVecType2;
 
@@ -250,6 +273,7 @@ extern "C"
 			{
 				//int cols = sqlite3_column_count(statement);
 				int result = 0;
+				//int id = -1;
 				while (true)
 				{
 					result = sqlite3_step(statement);
@@ -261,9 +285,16 @@ extern "C"
 						auto angle =	sqlite3_column_double(statement, 1);
 						auto distance = sqlite3_column_int(statement, 2 );
 						auto tilt =		sqlite3_column_double(statement, 3);
+						//auto cnt =		sqlite3_column_double(statement, 4);
 
-						(*sv)->push_back({ angle, rp::beam((_u16)distance, tilt) });
+						(*sv)->push_back({ angle, rp::beam((_u16)distance, tilt,id) });
 
+					}
+					else if (result == SQLITE_DONE) {
+
+						//SGUP_ODSA(__FUNCTION__, "SQLITE_DONE, at id:", id);
+
+						break;
 					}
 					else
 					{
