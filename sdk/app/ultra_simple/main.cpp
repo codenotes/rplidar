@@ -342,7 +342,7 @@ int main(int argc, const char * argv[]) {
 		std::stringstream ss;
 		num = 16;
 
-		int next = rp::RplidarProxy::fnGetScanFromDatabase(&scanPointer, std::string(DB_PATH), num);
+		int next = rp::RplidarProxy::fnGetScanFromDatabase(&scanPointer, std::string(DB_PATH), num,std::nullopt);
 		rp::RplidarProxy::fnSVToString(scanPointer, ss);
 		
 		cout << ss.str();
@@ -427,7 +427,7 @@ int main(int argc, const char * argv[]) {
 			if (sz) {
 				//rp::RplidarProxy::fnSavePresentScan(scanID++, std::string(DB_PATH), scanPointer);
 				cout << "would do scan to database..." << endl;
-				rp::RplidarProxy::fnSaveScanToDatabase(scanPointer, path, std::optional<int>());
+				rp::RplidarProxy::fnSaveScanToDatabase(scanPointer, path, std::optional<int>(),std::nullopt);
 
 			}
 
@@ -473,9 +473,11 @@ int main(int argc, const char * argv[]) {
 
 	auto fnDBReader = [&](std::optional< std::pair<int, int> > opt = std::nullopt, bool loop = false, bool rst = false, int delayMS = 500) {
 
+
+
 		while (1) {
 			
-			auto scanRet=rp::RplidarProxy::fnGetRangeOfScansFromDatabase(&scanPointer, path, opt, loop, rst);
+			auto scanRet=rp::RplidarProxy::fnGetRangeOfScansFromDatabase(&scanPointer, path, opt, loop, rst,std::nullopt);
 
 
 			if (scanPointer == nullptr) {
@@ -523,7 +525,7 @@ int main(int argc, const char * argv[]) {
 	//fnInit(); //starts lidar up
 	//fnReader();
 
-	//fnDBReader(std::pair<int, int>{6,2},true,false, 250);
+	//fnDBReader(std::pair<int, int>{0,0},true,false, 250);
 	fnDBReader(std::nullopt, true, false, 250);
 
 

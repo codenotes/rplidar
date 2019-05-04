@@ -187,25 +187,34 @@ extern "C"
 
 	}
 
-	DLL_EXPORT int  GetScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path, std::optional<int> & id) {
+	DLL_EXPORT int  GetScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path, std::optional<int> & id,
+		std::optional<std::string> & sweepTableName) {
 
-		return RplidarReadingQueue::getScanFromDatabase(psv, path, id);
+		return RplidarReadingQueue::getScanFromDatabase(psv, path, id, sweepTableName);
 
 
 	}
 
-	DLL_EXPORT int  SaveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv, std::string & path, std::optional<int> & id) {
+	DLL_EXPORT int  SaveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv, std::string & path, std::optional<int> & id,
+		std::optional<std::string> & sweepTableName) {
 
-		return RplidarReadingQueue::saveScanToDatabase(psv, path, id);
+		return RplidarReadingQueue::saveScanToDatabase(psv, path, id, sweepTableName);
 
 
 	}
 
 	DLL_EXPORT int  GetRangeOfScansFromDatabase(rp::RplidarProxy::ScanVecType2 ** sv, std::string & path, 
-		rp::RplidarProxy::scanRange rng, bool loop, bool reset) {
+		rp::RplidarProxy::scanRange rng, bool loop, bool reset, std::optional<std::string> & sweepTableName) {
 	//										
 		static rp::RplidarProxy::scanRange theRange=std::nullopt;
+		std::stringstream ss;
 
+		std::string theSweepTableName;
+		if (sweepTableName) {
+			theSweepTableName = *sweepTableName;
+		}
+		else
+			theSweepTableName = "sweep";
 
 		SGUP_ODSA(__FUNCTION__, "!!!hasvalue:", theRange.has_value());
 
@@ -235,8 +244,8 @@ extern "C"
 			}
 			else { //means we should go LIFO from max to min of whatever is in the database
 				//theRange->first= 
-				auto sql = "select ifnull(max(id),0),ifnull(min(id),0) from sweep;";
-				sb.execSQL(sql);
+				ss<< "select ifnull(max(id),0),ifnull(min(id),0) from "<<theSweepTableName<<";";
+				sb.execSQL(ss.str());
 
 
 				theRange = std::pair<int,int>(std::stoi(sb.results[0][0].second), std::stoi(sb.results[0][1].second));
@@ -262,7 +271,7 @@ extern "C"
 			}
 
 			auto sql =
-				boost::format("select  id, angle, distance, tilt from sweep where id == %1%") % theRange->first--; //count backward from max
+				boost::format("select  id, angle, distance, tilt from %1% where id == %2%") %theSweepTableName % theRange->first--; //count backward from max
 
 			*sv = new rp::RplidarProxy::ScanVecType2;
 

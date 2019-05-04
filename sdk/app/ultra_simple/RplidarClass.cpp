@@ -592,7 +592,7 @@ void RplidarReadingQueue::setTiltLidar(float tilt)
 
 //returns the penultimate id after the scan retrieved
 int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path,
-	std::optional<int> & id)
+	std::optional<int> & id, std::optional<std::string> & sweepTableName)
 {
 
 	stringstream ss;
@@ -600,7 +600,14 @@ int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** p
 	sb.createOrOpenDatabase(path);
 
 	int last_id = -1;
+	std::string theSweepTableName;
 
+	if (sweepTableName) {
+		theSweepTableName = *sweepTableName;
+	}
+	else 
+		theSweepTableName = "sweep";
+		
 
 	if (id) { //we have passed in a specific id, which is the callers responsability
 		last_id = *id;
@@ -608,7 +615,7 @@ int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** p
 	else //we want the last
 	{
 
-		ss<<"select ifnull(max(id),0) from sweep;";
+		ss << "select ifnull(max(id),0) from " << theSweepTableName << ";";
 		auto b = sb.sendSQL(ss.str());
 
 		if (!b || !sb.results.size())
@@ -625,8 +632,7 @@ int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** p
 
 	ss.str("");
 
-	ss<<"select angle, distance, tilt from sweep "
-			"where id=="<< last_id;
+	ss<<"select angle, distance, tilt from "<<theSweepTableName<<" where id=="<< last_id<<";";
 
 	auto b = sb.sendSQL(ss.str());
 
@@ -653,7 +659,7 @@ int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** p
 
 
 
-	ss.str((boost::format("select DISTINCT id from sweep where id < %1% order by id DESC LIMIT 1") % last_id).str().c_str() );
+	ss.str((boost::format("select DISTINCT id from %1% where id < %2% order by id DESC LIMIT 1") %theSweepTableName % last_id).str().c_str() );
 
 	EXECSQL(sb, ss.str());
 
@@ -670,7 +676,7 @@ int RplidarReadingQueue::getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** p
 }
 
 int RplidarReadingQueue::saveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv, std::string & path, 
-	std::optional<int> & id)
+	std::optional<int> & id, std::optional<std::string> & sweepTableName)
 {
 	stringstream ss;
 	SQLBuilder  sb;
@@ -678,7 +684,7 @@ int RplidarReadingQueue::saveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv
 	int last=0;
 
 	if (!id){
-		auto lid = getLastIDFromSweep(path);
+		auto lid = getLastIDFromSweep(path,sweepTableName);
 		last = *lid;
 		SGUP_ODSA(__FUNCTION__, "we have an empty id:", last);
 	}
@@ -696,7 +702,7 @@ int RplidarReadingQueue::saveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv
 	
 }
 
-std::optional<int> RplidarReadingQueue::getLastIDFromSweep(std::string & path)
+std::optional<int> RplidarReadingQueue::getLastIDFromSweep(std::string & path, std::optional<std::string> & sweepTableName)
 {
 	int last_id = -1;
 
@@ -704,7 +710,15 @@ std::optional<int> RplidarReadingQueue::getLastIDFromSweep(std::string & path)
 	SQLBuilder  sb;
 	sb.createOrOpenDatabase(path);
 
-	ss << "select ifnull(max(id),0) from sweep;";
+	std::string theSweepTableName;
+
+	if (sweepTableName) {
+		theSweepTableName = *sweepTableName;
+	}
+	else
+		theSweepTableName = "sweep";
+
+	ss << "select ifnull(max(id),0) from "<< theSweepTableName <<";";
 	auto b = sb.sendSQL(ss.str());
 
 	if (!b || !sb.results.size())

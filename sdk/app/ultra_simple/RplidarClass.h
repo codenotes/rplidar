@@ -86,7 +86,7 @@ struct RplidarReadingQueue {
 	static boost::thread * scanThread;
 	static boost::mutex qMutex;
 	static float tilt;
-
+	static std::string sweepTableName;
 
 	static rp::enumLidarStatus lidarStatus;
 
@@ -130,11 +130,11 @@ struct RplidarReadingQueue {
 
 	void setTiltLidar(float tilt);
 	//returns next lowest id for sweep, pass in an id::none if you want latest and to start the chain backward LIFO
-	static int getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path, std::optional<int> & id);
+	static int getScanFromDatabase(rp::RplidarProxy::ScanVecType2 ** psv, std::string & path, std::optional<int> & id, std::optional<std::string> & sweepTableName);
 
-	static int saveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv, std::string & path, std::optional<int> & id);
+	static int saveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv, std::string & path, std::optional<int> & id, std::optional<std::string> & sweepTableName);
 
-	static std::optional<int> getLastIDFromSweep(std::string & path);
+	static std::optional<int> getLastIDFromSweep(std::string & path, std::optional<std::string> & sweepTableName);
 };
 
 
@@ -142,6 +142,7 @@ struct RplidarReadingQueue {
 #define INIT_RPLIDAR boost::thread * RplidarReadingQueue::scanThread = nullptr; \
 	boost::mutex RplidarReadingQueue::qMutex; \
 	rp::enumLidarStatus RplidarReadingQueue::lidarStatus=rp::STOPPED; \
-	float RplidarReadingQueue::tilt = 0.0f;
+	float RplidarReadingQueue::tilt = 0.0f; \
+	std::string RplidarReadingQueue::sweepTableName;
 
 
