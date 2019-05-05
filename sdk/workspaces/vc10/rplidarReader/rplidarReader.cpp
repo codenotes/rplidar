@@ -245,8 +245,14 @@ extern "C"
 			else { //means we should go LIFO from max to min of whatever is in the database
 				//theRange->first= 
 				ss<< "select ifnull(max(id),0),ifnull(min(id),0) from "<<theSweepTableName<<";";
-				sb.execSQL(ss.str());
+				auto b=sb.execSQL(ss.str());
 
+				if (!b)
+				{
+					SGUP_ODSA(__FUNCTION__, "error in tablename", theSweepTableName);
+					*sv = nullptr;
+					return 1;
+				}
 
 				theRange = std::pair<int,int>(std::stoi(sb.results[0][0].second), std::stoi(sb.results[0][1].second));
 				//theRange->first = std::stoi(sb.results[0][0].second);

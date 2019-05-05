@@ -88,7 +88,7 @@ struct RplidarReadingQueue {
 	static float tilt;
 	static std::string sweepTableName;
 
-	static rp::enumLidarStatus lidarStatus;
+	static std::atomic<rp::enumLidarStatus> lidarStatus;
 
 	boost::circular_buffer<rp::measure> * cb = nullptr;
 	RplidarReadingQueue(float fromRadial, float toRadial, int qSize, _u32 baud = 256000, const char * opt_com_path = "\\\\.\\com3");
@@ -141,7 +141,7 @@ struct RplidarReadingQueue {
 
 #define INIT_RPLIDAR boost::thread * RplidarReadingQueue::scanThread = nullptr; \
 	boost::mutex RplidarReadingQueue::qMutex; \
-	rp::enumLidarStatus RplidarReadingQueue::lidarStatus=rp::STOPPED; \
+	std::atomic<rp::enumLidarStatus> RplidarReadingQueue::lidarStatus=rp::STOPPED; \
 	float RplidarReadingQueue::tilt = 0.0f; \
 	std::string RplidarReadingQueue::sweepTableName;
 

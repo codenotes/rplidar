@@ -406,7 +406,7 @@ int main(int argc, const char * argv[]) {
 	};
 
 
-	auto fnReader = [&]() {
+	auto fnReaderAndSaver = [&](const std::optional<std::string> & tableName) {
 
 		while (1) {
 			//cnt = rp::RplidarProxy::fnGetMeasure(m);
@@ -427,7 +427,7 @@ int main(int argc, const char * argv[]) {
 			if (sz) {
 				//rp::RplidarProxy::fnSavePresentScan(scanID++, std::string(DB_PATH), scanPointer);
 				cout << "would do scan to database..." << endl;
-				rp::RplidarProxy::fnSaveScanToDatabase(scanPointer, path, std::optional<int>(),std::nullopt);
+				rp::RplidarProxy::fnSaveScanToDatabase(scanPointer, path, std::optional<int>(), tableName);
 
 			}
 
@@ -471,13 +471,15 @@ int main(int argc, const char * argv[]) {
 
 	};
 
-	auto fnDBReader = [&](std::optional< std::pair<int, int> > opt = std::nullopt, bool loop = false, bool rst = false, int delayMS = 500) {
+	auto fnDBReader = [&](std::optional< std::pair<int, int> > opt = std::nullopt, bool loop = false, bool rst = false, int delayMS=500 ,
+		const std::optional<std::string> & tableName= std::optional<std::string>(std::string("sweep"))) {
 
 
 
 		while (1) {
 			
-			auto scanRet=rp::RplidarProxy::fnGetRangeOfScansFromDatabase(&scanPointer, path, opt, loop, rst,std::nullopt);
+			//auto scanRet=rp::RplidarProxy::fnGetRangeOfScansFromDatabase(&scanPointer, path, opt, loop, rst,std::nullopt);
+			auto scanRet = rp::RplidarProxy::fnGetRangeOfScansFromDatabase(&scanPointer, path, opt, loop, rst, tableName);
 
 
 			if (scanPointer == nullptr) {
@@ -526,7 +528,7 @@ int main(int argc, const char * argv[]) {
 	//fnReader();
 
 	//fnDBReader(std::pair<int, int>{0,0},true,false, 250);
-	fnDBReader(std::nullopt, true, false, 250);
+	fnDBReader(std::nullopt, true, false, 250, std::string("sweep"));
 
 
 	cout << "Waiting for reported shutdown..." << endl;
