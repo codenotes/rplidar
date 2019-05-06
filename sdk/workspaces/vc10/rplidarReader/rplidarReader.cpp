@@ -144,7 +144,7 @@ extern "C"
 
 
 		if (gpRPInstance) {
-			gpRPInstance->savePresentScan(id,database, theScan);
+			gpRPInstance->savePresentScan(id,database, theScan, "sweep");
 		}
 
 	}

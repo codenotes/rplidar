@@ -111,7 +111,8 @@ bool RplidarReadingQueue::push(rp::measure &m)
 			//storedRead[m.angle_q6_checkbit] = m.distance_q2;
 	//		OutputDebugStringA(__FUNCTION__ " end");
 			qMutex.unlock();
-		//	SGUP_ODS("PUSH THETA:", thet);
+		//	SGUP_ODSA("PUSH THETA:", thet);
+		//	cout << thet << " ";
 	
 			return true;
 		}
@@ -142,11 +143,11 @@ void RplidarReadingQueue::getScan(rp::RplidarProxy::ScanVecType2 ** theScan, int
 	
 
 	if (lidarStatus != rp::STARTED) {
-		OutputDebugStringA(__FUNCTION__ " LIDAR not spooled up yet...returning...");
+		//OutputDebugStringA(__FUNCTION__ " LIDAR not spooled up yet...returning...");
 		*theScan = nullptr;
 		return;
 	}
-	//SGUP_ODSA(__FUNCTION__, "acquiring lock")
+	SGUP_ODSA(__FUNCTION__, "acquiring lock")
 	qMutex.lock();
 	//theScan = storedRead;
 	//<angle  <distance, timepoint   >>    
@@ -384,6 +385,76 @@ bool RplidarReadingQueue::run()
 
 }
 
+bool RplidarReadingQueue::run2()
+{
+	//		signal(SIGINT, ctrlc);
+	//SGUP_ODS(__FUNCTION__)
+
+	if (!initLidat()) return false;
+	SGUP_ODS(__FUNCTION__, "COMPORT RECEIVED:", opt_com_path)
+
+		SGUP_ODS(__FUNCTION__, "initdat worked?")
+
+		drv->startMotor();
+	// start scan...
+	drv->startScan(0, 1);
+
+	lidarStatus = rp::STARTED;
+
+	char temp[512];
+	SGUP_ODS(__FUNCTION__, "keepgoing:", keepGoing);
+
+	// fetech result and print it out...
+	while (keepGoing && lidarStatus == rp::STARTED) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(1)); //new
+		rplidar_response_measurement_node_hq_t nodes[8192];
+		size_t   count = _countof(nodes);
+
+		auto op_result = drv->grabScanDataHq(nodes, count);
+
+		if (IS_OK(op_result)) {
+			drv->ascendScanData(nodes, count);
+			for (int pos = 0; pos < (int)count; ++pos) {
+
+				rp::measure m = (rp::measure&)nodes[pos];
+				if (push(m)) {
+				//		SGUP_ODS(m.debugPrint());
+				}
+				else {
+						//SGUP_ODS("REJECT:", m.theta());
+				}
+
+
+			}
+		}
+		else {
+			SGUP_ODS(__FUNCTION__, "error:strange");
+		}
+
+		try {
+			boost::this_thread::interruption_point();
+
+		}
+		catch (...)
+		{
+			OutputDebugStringA(__FUNCTION__ "interupt!");
+
+			SGUP_ODS(__FUNCTION__, "thread interrupt");
+
+			SGUP_ODS("Stopping scan and motor");
+
+			OutputDebugStringA(__FUNCTION__ "about stop motors");
+
+			drv->stop();
+			drv->stopMotor();
+
+			OutputDebugStringA(__FUNCTION__ "motors stopped!");
+			lidarStatus = rp::STOPPED;
+			break;
+		}
+	}
+
+}
 
 
 bool RplidarReadingQueue::runThreaded()
@@ -391,7 +462,8 @@ bool RplidarReadingQueue::runThreaded()
 	//SGUP_ODS(__FUNCTION__)
 	SGUP_ODSA(__FUNCTION__, "COMPORT RECEIVED:", opt_com_path)
 
-	scanThread = new boost::thread(std::bind(&RplidarReadingQueue::run, this));
+		//greg:changed from run() to run2
+	scanThread = new boost::thread(std::bind(&RplidarReadingQueue::run2, this));
 	return true;
 }
 
@@ -454,7 +526,8 @@ auto bind(SQLBuilder  & sb, int const index, int const value)
 	}
 }
 
-void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType2 * theScan)
+void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType2 * theScan, 
+	const std::string & tblName)
 {
 
 	//sqlite3_stmt *ppStmt;
@@ -499,7 +572,7 @@ void RplidarReadingQueue::savePresentScan(int id, std::string & database, rp::Rp
 
 
 	std::stringstream ss;
-	ss<< "insert into sweep(id, angle, distance, tilt) VALUES \n";
+	ss<< "insert into "<<tblName<<"(id, angle, distance, tilt) VALUES \n";
 	
 	//insert all this in SQL
 	//if (sv != nullptr);
@@ -696,7 +769,9 @@ int RplidarReadingQueue::saveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv
 
 	last++;
 
-	savePresentScan(last, path, psv);
+	std::string table = sweepTableName ? *sweepTableName : "sweep";
+
+	savePresentScan(last, path, psv,table );
 
 	return last;
 	

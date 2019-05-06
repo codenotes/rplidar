@@ -524,12 +524,15 @@ int main(int argc, const char * argv[]) {
 	};
 
 
-	//fnInit(); //starts lidar up
+	fnInit(); //starts lidar up
+
+
 	//fnReader();
 
 	//fnDBReader(std::pair<int, int>{0,0},true,false, 250);
-	fnDBReader(std::nullopt, true, false, 250, std::string("sweep"));
+	//fnDBReader(std::nullopt, true, false, 250, std::string("sweep"));
 
+	fnReaderAndSaver("sweep1");
 
 	cout << "Waiting for reported shutdown..." << endl;
 	rp::RplidarProxy::fnStopLidar();

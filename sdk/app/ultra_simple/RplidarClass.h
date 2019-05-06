@@ -118,13 +118,14 @@ struct RplidarReadingQueue {
 
 	bool run();
 
+	bool run2();
 	bool runThreaded();
 
 	void join();
 
 	void dumpScanToFile(std::string & fname, rp::RplidarProxy::ScanVecType2 * theScan, bool append);
 
-	static void savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType2 * theScan);
+	static void savePresentScan(int id, std::string & database, rp::RplidarProxy::ScanVecType2 * theScan, const std::string & tblName);
 
 	bool sendSQL(std::string & path , std::shared_ptr<std::string> & sql);
 
@@ -135,6 +136,7 @@ struct RplidarReadingQueue {
 	static int saveScanToDatabase(rp::RplidarProxy::ScanVecType2 * psv, std::string & path, std::optional<int> & id, std::optional<std::string> & sweepTableName);
 
 	static std::optional<int> getLastIDFromSweep(std::string & path, std::optional<std::string> & sweepTableName);
+	
 };
 
 
