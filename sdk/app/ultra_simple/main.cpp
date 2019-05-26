@@ -162,7 +162,7 @@ std::function<T> loadDllFunc(const std::string& funcName, HINSTANCE hGetProcIDDL
 	// Check if function was located.
 	if (!lpfnGetProcessID) {
 		//std::cerr << "Could not locate the function \"" << funcName << "\" in DLL\"" << dllName << "\"" << std::endl;
-		SGUP_ODS(__FUNCTION__, "function could not be loaded or dll does not exist and could not be loaded");
+		SGUP_ODS(__FUNCTION__, "function could not be loaded or dll does not exist and could not be loaded:", funcName.c_str());
 		return NULL;
 		//	exit(EXIT_FAILURE);
 	}
@@ -256,21 +256,36 @@ void recorder(int msec, const std::string & path) {
 
 }
 
-
 int main(int argc, const char * argv[]) {
-    const char * opt_com_path = NULL;
-    _u32         baudrateArray[2] = {115200, 256000};
-    _u32         opt_com_baudrate = 0;
-    u_result     op_result; 
+
+
+	ANSI_Util::EnableVTMode();
+
+#ifdef _DEBUG
+	HMODULE h = LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)");
+#else
+	HMODULE h = LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Release\rplidarReader.dll)");
+#endif
+	RP_INIT_DLL_FUNCTIONS(h);
+	return 0;
+}
+
+#if 0
+int main2(int argc, const char * argv[]) {
+	const char * opt_com_path = NULL;
+	_u32         baudrateArray[2] = { 115200, 256000 };
+	_u32         opt_com_baudrate = 0;
+	u_result     op_result;
 
 	ANSI_Util::EnableVTMode();
 
 
 
-	std::string dllloc = R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)";
+
+	std::string dllloc =   R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)";
 	 
 #ifdef _DEBUG
-	HMODULE h=LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)");
+	HMODULE h=  LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)");
 #else
 	HMODULE h = LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Release\rplidarReader.dll)");
 #endif
@@ -708,4 +723,4 @@ on_finished:
 #endif
     return 0;
 }
-
+#endif

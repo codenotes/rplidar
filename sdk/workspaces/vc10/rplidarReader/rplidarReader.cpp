@@ -7,6 +7,7 @@
 #include <chrono>
 #include <thread>
 #include "c:/usr/include/gregutils/Sqlbuilder.h"
+#include "rosstuff.h"
 //#define DLL_EXPORT __declspec(dllexport)
 
 RplidarReadingQueue * gpRPInstance = nullptr;
@@ -325,6 +326,39 @@ extern "C"
 		return 0;
 	}
 
+	DLL_EXPORT  void ROSAction(std::map<std::string, std::string> & args, int qSize, rp::enumROSCommand command)
+	{
+
+
+		switch (command)
+		{
+		case rp::START_SUB:
+			ROSStuff::initSub(args["topic"], qSize);
+			break;
+		case rp::STOP_SUB:
+			ROSStuff::stopSub();
+
+			break;
+		case rp::INTITIALIZE:
+
+			ROSStuff::init(args, "rplidar");
+
+
+
+			break;
+
+		case rp::TICK_SPIN:
+			ros::spinOnce();
+
+			break;
+		default:
+			break;
+		}
+	}
+
+	DLL_EXPORT  void GetROSScan(rp::RplidarProxy::ScanVecType2 ** theScan) {
+		ROSStuff::GetROSScan(theScan);
+	}
 
 
 }

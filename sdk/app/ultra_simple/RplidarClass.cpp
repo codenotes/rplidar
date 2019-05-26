@@ -12,6 +12,7 @@
 #include "c:/usr/include/gregutils/Sqlbuilder.h"
 #include <boost/algorithm/string/join.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include "..\..\..\sdk\workspaces\vc10\rplidarReader\rosstuff.h"
 
 INIT_RPLIDAR
 INIT_STRGUPLE
@@ -426,6 +427,8 @@ bool RplidarReadingQueue::run2()
 
 
 			}
+
+
 		}
 		else {
 			SGUP_ODS(__FUNCTION__, "error:strange");
