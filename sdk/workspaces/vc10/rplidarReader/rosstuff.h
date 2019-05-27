@@ -379,6 +379,7 @@ struct ROSStuff
 		{
 			SGUP_ODSA(__FUNCTION__, "ROS spin thread interrupted. Exiting.");
 		}
+
 	
 	}
 
