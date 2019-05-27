@@ -9,6 +9,7 @@
 #include "std_msgs/String.h"
 #include "sensor_msgs/LaserScan.h"
 #include <boost/circular_buffer.hpp>
+#include <boost/thread/thread.hpp>
 
 
 #define RAD2DEG(x) ((x)*180./M_PI)
@@ -363,6 +364,22 @@ struct ROSStuff
 		cb2->pop_front();
 		qMutex.unlock();
 
+	}
+
+	static void spinThread(int doEveryMsec) {
+
+		SGUP_ODSA(__FUNCTION__, "ROS spin thread starting.");
+		try {
+
+			ros::spinOnce();
+			boost::this_thread::sleep(boost::posix_time::milliseconds(doEveryMsec));
+			boost::this_thread::interruption_point();
+		}
+		catch (boost::thread_interrupted&)
+		{
+			SGUP_ODSA(__FUNCTION__, "ROS spin thread interrupted. Exiting.");
+		}
+	
 	}
 
 	static void subCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
