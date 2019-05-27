@@ -96,7 +96,7 @@ struct ROSStuff
 		thePublisher->publish(scan_msg);
 	}
 
-	static void init( std::map<std::string, std::string> args,  std::string  nodeName) {
+	static  bool init( std::map<std::string, std::string> args,  std::string  nodeName) {
 		ros::init(args, nodeName);
 
 		if (ros::master::check()) {
@@ -108,6 +108,7 @@ struct ROSStuff
 		}
 		else {
 			SGUP_ODSA(__FUNCTION__, "error master check returns false...");
+			return false;
 		}
 
 	}

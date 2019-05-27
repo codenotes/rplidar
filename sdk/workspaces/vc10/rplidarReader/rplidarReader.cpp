@@ -326,7 +326,7 @@ extern "C"
 		return 0;
 	}
 
-	DLL_EXPORT  void ROSAction(std::map<std::string, std::string> & args, int qSize, rp::enumROSCommand command)
+	DLL_EXPORT  bool ROSAction(std::map<std::string, std::string> & args, int qSize, rp::enumROSCommand command)
 	{
 
 
@@ -341,19 +341,22 @@ extern "C"
 			break;
 		case rp::INTITIALIZE:
 
-			ROSStuff::init(args, "rplidar");
+			return ROSStuff::init(args, "rplidar");
 
 
 
 			break;
 
 		case rp::TICK_SPIN:
-			ros::spinOnce();
+			if(ROSStuff::isSubscribing)
+				ros::spinOnce();
 
 			break;
 		default:
 			break;
 		}
+
+		return true;
 	}
 
 	DLL_EXPORT  void GetROSScan(rp::RplidarProxy::ScanVecType2 ** theScan) {
