@@ -11,7 +11,9 @@
 //#include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
 //#include "C:\usr\include\GregUtils\strguple.h"
 //#include <boost/circular_buffer.hpp>
+
 //#include <boost/thread.hpp>
+//TRACEDESIGNTIME = true
 
 #include "\usr\include\GregUtils\ansi_utils.h"
 
