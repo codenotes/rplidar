@@ -328,21 +328,33 @@ extern "C"
 
 	DLL_EXPORT  bool ROSAction(std::map<std::string, std::string> & args, int qSize, rp::enumROSCommand command)
 	{
-
+		int spinMsec = 100;
+		auto it = args.find("spinMsec");
+		auto topic = args.find("topic");
 
 		switch (command)
 		{
 		case rp::START_SUB:
-			ROSStuff::initSub(args["topic"], qSize);
+			if (topic != args.end()) {
+				ROSStuff::startSub(args["topic"], qSize);
+			}
+			else
+			{
+				SG2("START_SUB, but no topic!")
+			}
 			break;
 		case rp::STOP_SUB:
 			ROSStuff::stopSub();
 
 			break;
 		case rp::INTITIALIZE:
+		
+			if (it != args.end())
+			{
+				spinMsec = std::stoi(it->second);
+			}
 
-			return ROSStuff::init(args, "rplidar");
-
+			return ROSStuff::init(args, "rplidar", std::optional<int>(spinMsec));
 
 
 			break;
