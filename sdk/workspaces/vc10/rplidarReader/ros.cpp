@@ -9,7 +9,7 @@
 
 #include <sstream>
 
-#include "rosstuff.h"
+#include "/usr/include/rplidar/rosstuff.h"
 
 bool ros::console::g_initialized = false;
 

@@ -7,6 +7,7 @@
 //#include <vector>
 #include <future>
 #include "RplidarClass.h"
+#include "windows.h"
 
 //#include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
 //#include "C:\usr\include\GregUtils\strguple.h"
@@ -16,6 +17,7 @@
 //TRACEDESIGNTIME = true
 
 #include "\usr\include\GregUtils\ansi_utils.h"
+
 
 
 #define DB_PATH R"(C:\usr\data\cirrus.db)"
@@ -269,6 +271,8 @@ int main(int argc, const char * argv[]) {
 	HMODULE h = LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Release\rplidarReader.dll)");
 #endif
 	RP_INIT_DLL_FUNCTIONS(h);
+
+
 	return 0;
 }
 

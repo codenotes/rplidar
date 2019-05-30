@@ -7,7 +7,7 @@
 #include <chrono>
 #include <thread>
 #include "c:/usr/include/gregutils/Sqlbuilder.h"
-#include "rosstuff.h"
+#include "/usr/include/rplidar/rosstuff.h"
 //#define DLL_EXPORT __declspec(dllexport)
 
 RplidarReadingQueue * gpRPInstance = nullptr;
