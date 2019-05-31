@@ -272,6 +272,37 @@ int main(int argc, const char * argv[]) {
 #endif
 	RP_INIT_DLL_FUNCTIONS(h);
 
+	rp::ROSArgs args;
+
+
+	//#ROS_INIT_SWITCH to tell what this stuff does
+
+	rp::RplidarProxy::fnROSAction(args,  rp::enumROSCommand::INTITIALIZE);
+
+	args["topic"] = "scan";
+
+	rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::START_SUB);
+
+	rp::RplidarProxy::ScanVecType2 * sv;
+
+	while(1)
+		if (isKeyDown(VK_ESCAPE)) {
+
+
+			rp::RplidarProxy::fnGetROSScan(&sv);
+
+			if (sv) {
+
+
+				//do something
+
+				rp::RplidarProxy::fnDestroyScan(&sv);
+			}
+
+
+
+			return 0;
+		}
 
 	return 0;
 }

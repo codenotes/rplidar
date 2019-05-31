@@ -6,6 +6,13 @@
 #include "..\ultra_simple\RplidarClass.h"
 #include <chrono>
 #include <thread>
+
+
+#include <iterator> 
+#include <vector> 
+#include <algorithm> 
+
+
 #include "c:/usr/include/gregutils/Sqlbuilder.h"
 #include "/usr/include/rplidar/rosstuff.h"
 //#define DLL_EXPORT __declspec(dllexport)
@@ -326,16 +333,35 @@ extern "C"
 		return 0;
 	}
 
-	DLL_EXPORT  bool ROSAction(std::map<std::string, std::string> & args, int qSize, rp::enumROSCommand command)
+	DLL_EXPORT  bool ROSAction(rp::ROSArgs & args, rp::enumROSCommand command)
 	{
 		int spinMsec = 100;
 		auto it = args.find("spinMsec");
 		auto topic = args.find("topic");
+		rp::ROSArgs cleanArgs;
+		std::vector<std::string> specialArgs = { "spinMsec", "topic", "qSize" };
 
+		auto fnNotSpecialWord = [&](std::pair<std::string, std::string> p) {
+			
+			if (STRGUPLE::helpers::is_in(p.second, "spinMsec", "topic", "qSize")) {
+				return false;
+			}
+
+			return true;
+
+		};
+
+//#ROS_INIT_SWITCH
 		switch (command)
 		{
 		case rp::START_SUB:
 			if (topic != args.end()) {
+				int qSize = 1000;
+				auto f = args.find("qSize");
+
+				if (f != args.end()) {
+					qSize = std::stoi( f->second);
+				}
 				ROSStuff::startSub(args["topic"], qSize);
 			}
 			else
@@ -353,8 +379,12 @@ extern "C"
 			{
 				spinMsec = std::stoi(it->second);
 			}
+			//the presence of spinMsec means startSpin will be called in here.
+			//note that args is used for ros libraries, so we need to purge all my custom uses (like topic, qSize, etc.)
+			
+			std::copy_if(args.begin(), args.end(), std::inserter(cleanArgs, cleanArgs.end()), fnNotSpecialWord);
 
-			return ROSStuff::init(args, "rplidar", std::optional<int>(spinMsec));
+			return ROSStuff::init(cleanArgs, "rplidar", std::optional<int>(spinMsec));
 
 
 			break;
