@@ -338,6 +338,10 @@ extern "C"
 		int spinMsec = 100;
 		auto it = args.find("spinMsec");
 		auto topic = args.find("topic");
+		std::string theTopic;
+		ros::master::V_TopicInfo master_topics;
+		ros::master::V_TopicInfo::iterator tit;
+
 		rp::ROSArgs cleanArgs;
 		std::vector<std::string> specialArgs = { "spinMsec", "topic", "qSize" };
 
@@ -358,15 +362,39 @@ extern "C"
 			if (topic != args.end()) {
 				int qSize = 1000;
 				auto f = args.find("qSize");
-
+				theTopic = args["topic"];
 				if (f != args.end()) {
 					qSize = std::stoi( f->second);
 				}
-				ROSStuff::startSub(args["topic"], qSize);
+
+				
+				auto cnt = getTopics(master_topics);
+				
+				tit=std::find_if(master_topics.begin(), master_topics.end(), [&](ros::master::TopicInfo & top)->bool {
+					if (top.name == theTopic) {
+						SGUP_ODSA(__FUNCTION__, "found topic:", theTopic,"vs", top.name);
+						return true;
+					}
+					else
+					{
+						SGUP_ODSA(__FUNCTION__, "not matching topic:", theTopic, "vs", top.name);
+						return false; 
+					}
+				});
+
+				if (tit!= master_topics.end()) {
+					SGUP_ODSA(__FUNCTION__, "topic found:", theTopic, "starting subscription");
+					ROSStuff::startSub(theTopic,qSize);
+					return true;
+				}
+				else
+					return false;
+
 			}
 			else
 			{
 				SG2("START_SUB, but no topic!")
+					SGUP_ODSA(__FUNCTION__, "The Topic does no exist..", theTopic);
 			}
 			break;
 		case rp::STOP_SUB:

@@ -265,6 +265,9 @@ int main(int argc, const char * argv[]) {
 
 	ANSI_Util::EnableVTMode();
 
+	cout << "starting..." << endl;
+
+
 #ifdef _DEBUG
 	HMODULE h = LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Debug\rplidarReader.dll)");
 #else
@@ -279,9 +282,15 @@ int main(int argc, const char * argv[]) {
 
 	rp::RplidarProxy::fnROSAction(args,  rp::enumROSCommand::INTITIALIZE);
 
-	args["topic"] = "scan";
+	args["topic"] = "rplidarScan";
 
-	rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::START_SUB);
+	auto b=rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::START_SUB);
+
+	if (!b) {
+		cout << "oh no, topic isn't found or something else wrong" << endl;
+		return 0;
+
+	}
 
 	rp::RplidarProxy::ScanVecType2 * sv;
 
@@ -293,7 +302,7 @@ int main(int argc, const char * argv[]) {
 
 			if (sv) {
 
-
+				cout <<"got something:"<< sv->size()<<endl;
 				//do something
 
 				rp::RplidarProxy::fnDestroyScan(&sv);
