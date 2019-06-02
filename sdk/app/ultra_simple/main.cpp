@@ -260,10 +260,13 @@ void recorder(int msec, const std::string & path) {
 
 }
 
+#include <boost/lexical_cast.hpp>
+
 int main(int argc, const char * argv[]) {
 
 
 	ANSI_Util::EnableVTMode();
+
 
 	cout << "starting..." << endl;
 
@@ -278,14 +281,15 @@ int main(int argc, const char * argv[]) {
 	rp::ROSArgs args;
 
 
+	args["spinMsec"] = "2"; //Hz
 	//#ROS_INIT_SWITCH to tell what this stuff does
 
 	rp::RplidarProxy::fnROSAction(args,  rp::enumROSCommand::INTITIALIZE);
-
-	args["topic"] = "rplidarScan";
+	args.clear();
+	args["topic"] = "/rplidarScan";
 
 	auto b=rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::START_SUB);
-
+	SGUP_DEBUGLINE
 	if (!b) {
 		cout << "oh no, topic isn't found or something else wrong" << endl;
 		return 0;
@@ -293,7 +297,8 @@ int main(int argc, const char * argv[]) {
 	}
 
 	rp::RplidarProxy::ScanVecType2 * sv;
-
+	int x;
+	cin >> x;
 	while(1)
 		if (isKeyDown(VK_ESCAPE)) {
 
@@ -302,17 +307,17 @@ int main(int argc, const char * argv[]) {
 
 			if (sv) {
 
-				cout <<"got something:"<< sv->size()<<endl;
+				cout << "got something:" << sv->size() << endl;
 				//do something
 
 				rp::RplidarProxy::fnDestroyScan(&sv);
 			}
-
-
-
-			return 0;
+			else
+				cout << "Nothing!\t" ;
+			
 		}
 
+	cout << endl << "exiting..." << endl;
 	return 0;
 }
 

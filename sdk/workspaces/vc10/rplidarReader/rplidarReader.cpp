@@ -347,10 +347,11 @@ extern "C"
 
 		auto fnNotSpecialWord = [&](std::pair<std::string, std::string> p) {
 			
-			if (STRGUPLE::helpers::is_in(p.second, "spinMsec", "topic", "qSize")) {
+			if (STRGUPLE::helpers::is_in(p.first, "spinMsec", "topic", "qSize")) {
 				return false;
 			}
 
+			SG2("not special word:", p.second);
 			return true;
 
 		};
@@ -383,12 +384,17 @@ extern "C"
 				});
 
 				if (tit!= master_topics.end()) {
-					SGUP_ODSA(__FUNCTION__, "topic found:", theTopic, "starting subscription");
+					SGUP_ODSA(__FUNCTION__,__LINE__, "topic found:", theTopic, "starting subscription");
 					ROSStuff::startSub(theTopic,qSize);
+					SGUP_DEBUGLINE
+
 					return true;
 				}
-				else
+				else {
+
+					SGUP_ODSA(__FUNCTION__, "look through master topics and didn't find:", theTopic);
 					return false;
+				}
 
 			}
 			else
@@ -403,16 +409,20 @@ extern "C"
 			break;
 		case rp::INTITIALIZE:
 		
-			if (it != args.end())
-			{
+			if (it != args.end())			{
 				spinMsec = std::stoi(it->second);
+				SGUP_ODSA(__FUNCTION__, "spinMsec argument found in initialize:", it->first, spinMsec);
+			}
+			else{
+				SGUP_ODSA(__FUNCTION__, "warning: initialize called but no spinMsec argument was given, which means there will be no ros spinning thread, need to start that up manually.");
+
 			}
 			//the presence of spinMsec means startSpin will be called in here.
 			//note that args is used for ros libraries, so we need to purge all my custom uses (like topic, qSize, etc.)
 			
 			std::copy_if(args.begin(), args.end(), std::inserter(cleanArgs, cleanArgs.end()), fnNotSpecialWord);
-
-			return ROSStuff::init(cleanArgs, "rplidar", std::optional<int>(spinMsec));
+			
+			return ROSStuff::init(cleanArgs, "rplidar",std::optional<int>(spinMsec));
 
 
 			break;
