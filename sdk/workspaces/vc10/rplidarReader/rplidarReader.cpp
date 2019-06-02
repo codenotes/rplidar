@@ -432,6 +432,12 @@ extern "C"
 				ros::spinOnce();
 
 			break;
+
+		case rp::SHUTDOWN:
+
+			ROSStuff::shutdown();
+			break;
+
 		default:
 			break;
 		}

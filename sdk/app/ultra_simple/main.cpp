@@ -265,7 +265,7 @@ void recorder(int msec, const std::string & path) {
 int main(int argc, const char * argv[]) {
 
 
-	ANSI_Util::EnableVTMode();
+	//ANSI_Util::EnableVTMode();
 
 
 	cout << "starting..." << endl;
@@ -297,27 +297,37 @@ int main(int argc, const char * argv[]) {
 	}
 
 	rp::RplidarProxy::ScanVecType2 * sv;
-	int x;
-	cin >> x;
-	while(1)
-		if (isKeyDown(VK_ESCAPE)) {
 
+	cout << RED_DEF <<"entering loop"<< RESET_DEF << endl;
+
+	while(1)
+		 {
+
+		if (isKeyDown(VK_ESCAPE)) break;
 
 			rp::RplidarProxy::fnGetROSScan(&sv);
 
 			if (sv) {
 
-				cout << "got something:" << sv->size() << endl;
+			//	cout << "got something:" << sv->size() << endl;
+				for (auto &[deg, beam] : *sv) {
+					cout << GREEN_DEF << deg << ":" << YELLOW_DEF << ":" << beam.distance << "\t"<<RESET_DEF;
+				}
+				cout << endl;
 				//do something
 
 				rp::RplidarProxy::fnDestroyScan(&sv);
 			}
 			else
-				cout << "Nothing!\t" ;
+			{
+			}
 			
 		}
 
-	cout << endl << "exiting..." << endl;
+	cout << endl << "exiting...any key" << endl;
+	std::string s;
+	cin >> s;
+	rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::SHUTDOWN);
 	return 0;
 }
 
