@@ -339,19 +339,21 @@ extern "C"
 		auto it = args.find("spinMsec");
 		auto topic = args.find("topic");
 		auto serviceCommand = args.find("serviceCommand");
+		auto nodeName = args.find("nodeName");
 
 		std::string theTopic;
+		std::string theNodeName="rplidar_client";
 
 		
 		ros::master::V_TopicInfo master_topics;
 		ros::master::V_TopicInfo::iterator tit;
 
 		rp::ROSArgs cleanArgs;
-		std::vector<std::string> specialArgs = { "spinMsec", "topic", "qSize", "serviceCommand" };
+		std::vector<std::string> specialArgs = { "spinMsec", "topic", "qSize", "serviceCommand", "nodeName" }; //just for reference, specialArgs not used anywhere
 
 		auto fnNotSpecialWord = [&](std::pair<std::string, std::string> p) {
 			
-			if (STRGUPLE::helpers::is_in(p.first, "spinMsec", "topic", "qSize")) {
+			if (STRGUPLE::helpers::is_in(p.first, "spinMsec", "topic", "qSize", "serviceCommand", "nodeName")) {
 				return false;
 			}
 
@@ -426,15 +428,18 @@ extern "C"
 				SGUP_ODSA(__FUNCTION__, "spinMsec argument found in initialize:", it->first, spinMsec);
 			}
 			else{
-				SGUP_ODSA(__FUNCTION__, "warning: initialize called but no spinMsec argument was given, which means there will be no ros spinning thread, need to start that up manually.");
+				SGUP_ODSA(__FUNCTION__, "warning: initialize called but no spinMsec argument was given, might be ok");
 
 			}
 			//the presence of spinMsec means startSpin will be called in here.
 			//note that args is used for ros libraries, so we need to purge all my custom uses (like topic, qSize, etc.)
-			
+
+			if (nodeName != args.end())
+				theNodeName = nodeName->second;
+			//removes all my keywords and leaves only the official ros ones, like __master if present.
 			std::copy_if(args.begin(), args.end(), std::inserter(cleanArgs, cleanArgs.end()), fnNotSpecialWord);
 			
-			return ROSStuff::init(cleanArgs, "rplidar_client",std::optional<int>(spinMsec));
+			return ROSStuff::init(cleanArgs,theNodeName,std::optional<int>(spinMsec));
 
 
 			break;
