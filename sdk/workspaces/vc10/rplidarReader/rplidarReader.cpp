@@ -333,17 +333,21 @@ extern "C"
 		return 0;
 	}
 
-	DLL_EXPORT  bool ROSAction(rp::ROSArgs & args, rp::enumROSCommand command)
+	DLL_EXPORT  bool ROSAction(const rp::ROSArgs & args, rp::enumROSCommand command)
 	{
 		int spinMsec = 100;
 		auto it = args.find("spinMsec");
 		auto topic = args.find("topic");
+		auto serviceCommand = args.find("serviceCommand");
+
 		std::string theTopic;
+
+		
 		ros::master::V_TopicInfo master_topics;
 		ros::master::V_TopicInfo::iterator tit;
 
 		rp::ROSArgs cleanArgs;
-		std::vector<std::string> specialArgs = { "spinMsec", "topic", "qSize" };
+		std::vector<std::string> specialArgs = { "spinMsec", "topic", "qSize", "serviceCommand" };
 
 		auto fnNotSpecialWord = [&](std::pair<std::string, std::string> p) {
 			
@@ -363,7 +367,15 @@ extern "C"
 			if (topic != args.end()) {
 				int qSize = 1000;
 				auto f = args.find("qSize");
-				theTopic = args["topic"];
+		
+				if (topic != args.end())
+					theTopic = topic->second;
+				else {
+					SGUP_ODSA(__FUNCTION__, "no topic found in args...error.");
+					return false;
+				}
+
+
 				if (f != args.end()) {
 					qSize = std::stoi( f->second);
 				}
@@ -422,7 +434,7 @@ extern "C"
 			
 			std::copy_if(args.begin(), args.end(), std::inserter(cleanArgs, cleanArgs.end()), fnNotSpecialWord);
 			
-			return ROSStuff::init(cleanArgs, "rplidar",std::optional<int>(spinMsec));
+			return ROSStuff::init(cleanArgs, "rplidar_client",std::optional<int>(spinMsec));
 
 
 			break;
@@ -437,6 +449,24 @@ extern "C"
 
 			ROSStuff::shutdown();
 			break;
+
+		case rp::START_MOTOR:
+
+			ROSStuff::callService("/start_motor");
+			break;
+
+		case rp::STOP_MOTOR:
+
+			ROSStuff::callService("/stop_motor");
+			break;
+
+		case rp::CALL_SERVICE:
+
+			if(serviceCommand!=args.end())
+				ROSStuff::callService(serviceCommand->second);
+
+
+
 
 		default:
 			break;

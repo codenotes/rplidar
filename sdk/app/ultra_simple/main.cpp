@@ -279,6 +279,7 @@ int main(int argc, const char * argv[]) {
 	RP_INIT_DLL_FUNCTIONS(h);
 
 	rp::ROSArgs args;
+	std::string s;
 
 
 	args["spinMsec"] = "2"; //Hz
@@ -297,6 +298,10 @@ int main(int argc, const char * argv[]) {
 	}
 
 	rp::RplidarProxy::ScanVecType2 * sv;
+	
+	//rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::STOP_MOTOR);
+	//cin >> s;
+	//return 0;
 
 	cout << RED_DEF <<"entering loop"<< RESET_DEF << endl;
 
@@ -324,10 +329,11 @@ int main(int argc, const char * argv[]) {
 			
 		}
 
-	cout << endl << "exiting...any key" << endl;
-	std::string s;
-	cin >> s;
+	
 	rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::SHUTDOWN);
+	cout << endl << "exiting...any key" << endl;
+	
+	cin >> s;
 	return 0;
 }
 
