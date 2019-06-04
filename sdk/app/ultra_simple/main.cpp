@@ -159,7 +159,7 @@ template <typename T>
 std::function<T> loadDllFunc(const std::string& funcName, HINSTANCE hGetProcIDDLL) {
 	// Load DLL.
 
-
+	rp::RplidarProxy::areFunctionsInit = true; //if this is called even once, assume it has been called via the INIT macro and all function objects are loaded
 	// Locate function in DLL.
 	FARPROC lpfnGetProcessID = GetProcAddress(hGetProcIDDLL, funcName.c_str());
 
@@ -280,16 +280,21 @@ int main(int argc, const char * argv[]) {
 
 	rp::ROSArgs args;
 	std::string s;
+	bool b;
 
-
-	args["spinMsec"] = "2"; //Hz
+	//args["spinMsec"] = "2"; //Hz
 	//#ROS_INIT_SWITCH to tell what this stuff does
 
 	rp::RplidarProxy::fnROSAction(args,  rp::enumROSCommand::INTITIALIZE);
 	args.clear();
+
+	
+	b = rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::START_MOTOR);
+
+
 	args["topic"] = "/rplidarScan";
 
-	auto b=rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::START_SUB);
+	 b=rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::START_SUB);
 	SGUP_DEBUGLINE
 	if (!b) {
 		cout << "oh no, topic isn't found or something else wrong" << endl;
@@ -316,6 +321,8 @@ int main(int argc, const char * argv[]) {
 
 			//	cout << "got something:" << sv->size() << endl;
 				for (auto &[deg, beam] : *sv) {
+					
+				
 					cout << GREEN_DEF << deg << ":" << YELLOW_DEF << ":" << beam.distance << "\t"<<RESET_DEF;
 				}
 				cout << endl;
@@ -329,7 +336,7 @@ int main(int argc, const char * argv[]) {
 			
 		}
 
-	
+	rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::STOP_MOTOR);
 	rp::RplidarProxy::fnROSAction(args, rp::enumROSCommand::SHUTDOWN);
 	cout << endl << "exiting...any key" << endl;
 	
