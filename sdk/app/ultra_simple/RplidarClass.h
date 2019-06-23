@@ -9,7 +9,7 @@
 #include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
 #include "C:\usr\include\GregUtils\strguple.h"
 #include <boost/circular_buffer.hpp>
-#include <boost/thread.hpp>
+#include <boost/thread/thread.hpp> //added /thread/ here, if there are problems look into this
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <fstream>
 #include <boost/format.hpp>

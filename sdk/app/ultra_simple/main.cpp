@@ -7,7 +7,11 @@
 //#include <vector>
 #include <future>
 #include "RplidarClass.h"
+
+#include <boost/asio/serial_port.hpp> 
+#include <boost/asio.hpp> 
 #include "windows.h"
+#include <boost/circular_buffer.hpp>
 
 //#include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
 //#include "C:\usr\include\GregUtils\strguple.h"
@@ -262,13 +266,364 @@ void recorder(int msec, const std::string & path) {
 
 #include <boost/lexical_cast.hpp>
 
+using namespace boost::asio;
+#define READ_SIZE 512
+
+#if 0
+void read_callback(bool& data_available, deadline_timer& timeout, const boost::system::error_code& error, std::size_t bytes_transferred);
+void wait_callback(serial_port& ser_port, const boost::system::error_code& error);
+
+
+void foo()
+{
+	io_service     io_svc;
+	serial_port    ser_port(io_svc, "COM8");
+	deadline_timer timeout(io_svc);
+	unsigned char  my_buffer[1];
+	bool           data_available = false;
+
+	ser_port.async_read_some(boost::asio::buffer(my_buffer),
+		boost::bind(&read_callback, boost::ref(data_available), boost::ref(timeout),
+			boost::asio::placeholders::error,
+			boost::asio::placeholders::bytes_transferred));
+	timeout.expires_from_now(boost::posix_time::milliseconds(500 ));
+	timeout.async_wait(boost::bind(&wait_callback, boost::ref(ser_port),
+		boost::asio::placeholders::error));
+
+	io_svc.run();  // will block until async callbacks are finished
+
+	if (!data_available)
+	{
+		//kick_start_the_device();
+	}
+}
+
+
+void wait_callback(serial_port& ser_port, const boost::system::error_code& error)
+{
+	if (error)
+	{
+		// Data was read and this timeout was canceled
+		return;
+	}
+
+	ser_port.cancel();  // will cause read_callback to fire with an error
+}
+
+#endif
+
+void cbSerial(std::vector<unsigned char> & buf  ) {
+
+}
+
+
+
+double a[3], w[3], Angle[3], T;
+void DecodeIMUData(unsigned char chrTemp[])
+{
+	switch (chrTemp[1])
+	{
+	case 0x51:
+		a[0] = (short(chrTemp[3] << 8 | chrTemp[2])) / 32768.0 * 16;
+		a[1] = (short(chrTemp[5] << 8 | chrTemp[4])) / 32768.0 * 16;
+		a[2] = (short(chrTemp[7] << 8 | chrTemp[6])) / 32768.0 * 16;
+		T = (short(chrTemp[9] << 8 | chrTemp[8])) / 340.0 + 36.25;
+		break;
+	case 0x52:
+		w[0] = (short(chrTemp[3] << 8 | chrTemp[2])) / 32768.0 * 2000;
+		w[1] = (short(chrTemp[5] << 8 | chrTemp[4])) / 32768.0 * 2000;
+		w[2] = (short(chrTemp[7] << 8 | chrTemp[6])) / 32768.0 * 2000;
+		T = (short(chrTemp[9] << 8 | chrTemp[8])) / 340.0 + 36.25;
+		break;
+	case 0x53:
+		Angle[0] = (short(chrTemp[3] << 8 | chrTemp[2])) / 32768.0 * 180;
+		Angle[1] = (short(chrTemp[5] << 8 | chrTemp[4])) / 32768.0 * 180;
+		Angle[2] = (short(chrTemp[7] << 8 | chrTemp[6])) / 32768.0 * 180;
+		T = (short(chrTemp[9] << 8 | chrTemp[8])) / 340.0 + 36.25;
+		printf("a = %4.3f\t%4.3f\t%4.3f\t\r\n", a[0], a[1], a[2]);
+		printf("w = %4.3f\t%4.3f\t%4.3f\t\r\n", w[0], w[1], w[2]);
+		printf("Angle = %4.2f\t%4.2f\t%4.2f\tT=%4.2f\r\n", Angle[0], Angle[1], Angle[2], T);
+		break;
+	}
+}
+
+
+#define QSIZE 50
+class SPBoost {
+	inline static boost::asio::io_service io;
+	inline static boost::asio::serial_port * port=nullptr;// (io);
+	inline static std::size_t bytesTransferred;
+	inline static std::array<unsigned char, READ_SIZE> bytes;
+	inline static boost::circular_buffer<unsigned char> cb{ 256 };
+	using thing = std::function<void(void)>;
+	using uchar = unsigned char;
+public:
+	
+	struct AngVelocity {
+		uchar wxL;
+		uchar wxH;
+		uchar wyL;
+		uchar wyH;
+		uchar wzL;
+		uchar wzH;
+		uchar TL;
+		uchar TH;
+		uchar Sum;
+		double wx;
+		double wy;
+		double wz;
+		double temp;
+	};
+
+	struct Angles {
+
+		uchar RollL;
+		uchar RollH;
+		uchar PitchL;
+		uchar PitchH;
+		uchar YawL;
+		uchar YawH;
+		uchar TL;
+		uchar TH;
+		uchar Sum;
+		double roll;
+		double pitch;
+		double yaw;
+		double temp;
+
+
+	};
+
+
+	struct Acceleration {
+			uchar AxL;
+			uchar AxH; 
+			uchar AyL; 
+			uchar AyH; 
+			uchar AzL; 
+			uchar AzH; 
+			uchar TL; 
+			uchar TH; 
+			uchar Sum;
+			double ax;
+			double ay;
+			double az;
+			double temp;
+	};
+
+
+	inline static boost::circular_buffer<Angles> cbAngles{ QSIZE };
+	inline static boost::circular_buffer<Acceleration> cbAccel{ QSIZE };
+	inline static boost::circular_buffer<AngVelocity> cbAngleVel{ QSIZE };
+
+	static void interpretReadings() {
+
+		if (cb.empty() || (cb.size()<100)) return;
+
+
+		auto fnAngVelocity = [&]() {
+			//we need four additional
+			AngVelocity av;
+			av.wxL = cb.front(); cb.pop_front();//2
+			av.wxH = cb.front(); cb.pop_front();//3
+			av.wyL = cb.front(); cb.pop_front();//4
+			av.wyH = cb.front(); cb.pop_front();//5
+			av.wzL = cb.front(); cb.pop_front();//6
+			av.wzH = cb.front(); cb.pop_front();//7
+			av.TL =  cb.front() ; cb.pop_front();//8
+			av.TH =  cb.front() ; cb.pop_front();//9
+			av.Sum = cb.front(); cb.pop_front();//10
+
+			av.wx = (short(av.wxH << 8 | av.wxL)) / 32768.0 * 2000;
+			av.wy = (short(av.wyH << 8 | av.wyL)) / 32768.0 * 2000;
+			av.wz = (short(av.wzH << 8 | av.wzL)) / 32768.0 * 2000;
+			av.temp = (short(av.TH << 8 | av.TL)) / 340.0 + 36.25;
+			
+			cbAngleVel.push_back(av);
+		
+		};
+
+
+		auto fnAngles = [&]() {
+			
+			Angles ang;
+
+			ang.RollL= cb.front(); cb.pop_front();//2
+			ang.RollH= cb.front(); cb.pop_front();//3
+			ang.PitchL= cb.front(); cb.pop_front();//4
+			ang.PitchH= cb.front(); cb.pop_front();//5
+			ang.YawL= cb.front(); cb.pop_front();//6
+			ang.YawH= cb.front(); cb.pop_front();//7
+			ang.TL= cb.front(); cb.pop_front();//8
+			ang.TH= cb.front(); cb.pop_front();//9
+			ang.Sum= cb.front(); cb.pop_front();//10
+
+			
+			ang.roll = (short(ang.RollH << 8 | ang.RollL)) / 32768.0 * 180;
+			ang.pitch = (short(ang.PitchH << 8 | ang.PitchL)) / 32768.0 * 180;
+			ang.roll = (short(ang.YawH << 8 | ang.YawL)) / 32768.0 * 180;
+			ang.temp = (short(ang.TH << 8 | ang.TL)) / 340.0 + 36.25;
+			
+			cbAngles.push_back(ang);
+		};
+
+
+		auto fnAccel =[&]() {
+			
+			Acceleration ac;
+
+			ac.AxL = cb.front(); cb.pop_front();//2
+			ac.AxH = cb.front(); cb.pop_front();//3
+			ac.AyL = cb.front(); cb.pop_front();//4
+			ac.AyH = cb.front(); cb.pop_front();//5
+			ac.AzL = cb.front(); cb.pop_front();//6
+			ac.AzH = cb.front(); cb.pop_front();//7
+			ac.TL = cb.front(); cb.pop_front();//8
+			ac.TH = cb.front(); cb.pop_front();//9
+			ac.Sum = cb.front(); cb.pop_front();//10
+
+			ac.ax = (short(ac.AxH << 8 | ac.AxL)) / 32768.0 * 16;
+			ac.ay = (short(ac.AyH << 8 | ac.AyL)) / 32768.0 * 16;
+			ac.az = (short(ac.AzH << 8 | ac.AzL)) / 32768.0 * 16;
+			ac.temp = (short(ac.TH << 8 | ac.TL)) / 340.0 + 36.25;
+			
+			cbAccel.push_back(ac);
+
+		};
+
+		std::map<uchar, thing> typeSwitcher = { {0x52,fnAngVelocity},{0x53,fnAngles},{0x51,fnAccel} };
+
+	//	cout << "!" << endl;
+
+
+		while (cb[0] != 0x55 ) {
+			//SG2("NOT header, cb.size:", cb.size())
+
+			//_RPT2(0, "not 55, pop:%x,%x", cb[0], cb.front());
+		//	SGUP_ODSA("dump:",(int)cb[0], (int)cb[1], (int)cb[2], (int)cb[3], (int)cb[4], (int)cb[5], (int)cb[6], (int)cb[7], (int)cb[8], (int)cb[9]);
+
+
+			printf("about pop (0-9):%x %x %x %x %x %x %x %x %x\n", cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+			cb.pop_front(); //throw away, remaining 10
+			printf("just popped (0-9):%x %x %x %x %x %x %x %x %x\n", cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+
+			if (cb.empty()) { return; }
+			
+	//		break;
+
+		}
+
+		
+		cb.pop_front(); //get rid of the hessage header now, 0x55...
+
+	//	SG2("found header");
+		if (cb.size() < 10) { cout << RED_DEF << "oh no, <10" << RESET_DEF << endl; return; } //in case we had a bunch of inbetween data and a header wasn't found
+
+		printf(GREEN_DEF "data!:%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+
+		
+		//what type of message is this? 
+		uchar typ = cb.front();
+	//	_RPT3(0, "type:%x,%x, typ:%x", cb[0], cb.front(), cb[0], typ);
+
+		cb.pop_front(); //get rid of typ descripter, **9** left before next header, which we want to leave in front of the cb
+
+		if (typeSwitcher.find(typ) != typeSwitcher.end()) {
+			printf(YELLOW_DEF "%x\n" RESET_DEF, typ);
+			for (int i = 1; i<=9; i++) {
+				cb.pop_front(); cout << "popi(" << i << ") ";
+			}
+			cout << endl;
+
+			printf(INVERSEMAJ_DEF "TOP CB:%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+			
+		//	typeSwitcher[typ]();
+		}
+		else
+		{
+			printf(RED_DEF "message?:%x\n" RESET_DEF, typ);
+		}
+		//	_RPT1(0, "message?:%x", typ);
+			
+
+
+	}
+
+
+	static void read_callback(const boost::system::error_code &error,	std::size_t  bytes_transferred)	{
+
+		if (!error) {
+			
+			//port->async_read_some(buffer(bytes),
+			//	boost::bind( SPBoost::read_callback,  boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)//boost::ref(bytesTransferred))
+			//	);
+			port->async_read_some(buffer(bytes), read_callback);
+			//cout << "reading:" << bytes_transferred << endl;
+			//std::copy(begin(newElements), end(newElements), std::back_inserter(v));
+			//cb.push_back(bytes.begin(), bytes.end());
+			cb.insert(cb.end(), bytes.begin(), bytes.end());
+			interpretReadings();
+
+			
+		}
+		else {
+			cout << "error?" << endl;
+		}
+
+		//if (error || !bytes_transferred)
+		//{
+		//	// No data was read!
+		//	data_available = false;
+		//	return;
+		//}
+
+	//	timeout.cancel();  // will cause wait_callback to fire with an error
+		//data_available = true;
+	}
+
+public:
+	SPBoost(std::string com, int bufSize = READ_SIZE) {
+		using namespace boost;
+
+		//asio::io_service io;
+		//asio::serial_port port(io);
+		port = new asio::serial_port(io);
+
+
+		port->open(com);
+		port->set_option(asio::serial_port_base::baud_rate(115200));
+
+		/*unsigned char c[255];*/
+
+		// Read 1 character into c, this will block
+		// forever if no character arrives.
+
+		port->async_read_some(buffer(bytes), read_callback);
+		//asio::read(port, asio::buffer(&c, bufSize));
+		io.run();
+		cout << "constructor done" << endl;
+		//port.close();
+
+		//return c;
+	}
+};
+
+
+
+
 int main(int argc, const char * argv[]) {
 
 
 	//ANSI_Util::EnableVTMode();
-
+	//auto x = ((unsigned char)0x55 == 'U') ? 1 : 0;
+//	cout << x << endl;
+	//return 0;
 
 	cout << "starting..." << endl;
+	SPBoost sp("COM8", READ_SIZE);
+
+
+	return 0;
 
 
 #ifdef _DEBUG
