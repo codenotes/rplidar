@@ -269,48 +269,6 @@ void recorder(int msec, const std::string & path) {
 using namespace boost::asio;
 #define READ_SIZE 512
 
-#if 0
-void read_callback(bool& data_available, deadline_timer& timeout, const boost::system::error_code& error, std::size_t bytes_transferred);
-void wait_callback(serial_port& ser_port, const boost::system::error_code& error);
-
-
-void foo()
-{
-	io_service     io_svc;
-	serial_port    ser_port(io_svc, "COM8");
-	deadline_timer timeout(io_svc);
-	unsigned char  my_buffer[1];
-	bool           data_available = false;
-
-	ser_port.async_read_some(boost::asio::buffer(my_buffer),
-		boost::bind(&read_callback, boost::ref(data_available), boost::ref(timeout),
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred));
-	timeout.expires_from_now(boost::posix_time::milliseconds(500 ));
-	timeout.async_wait(boost::bind(&wait_callback, boost::ref(ser_port),
-		boost::asio::placeholders::error));
-
-	io_svc.run();  // will block until async callbacks are finished
-
-	if (!data_available)
-	{
-		//kick_start_the_device();
-	}
-}
-
-
-void wait_callback(serial_port& ser_port, const boost::system::error_code& error)
-{
-	if (error)
-	{
-		// Data was read and this timeout was canceled
-		return;
-	}
-
-	ser_port.cancel();  // will cause read_callback to fire with an error
-}
-
-#endif
 
 void cbSerial(std::vector<unsigned char> & buf  ) {
 
@@ -354,7 +312,7 @@ class SPBoost {
 	inline static boost::asio::serial_port * port=nullptr;// (io);
 	inline static std::size_t bytesTransferred;
 	inline static std::array<unsigned char, READ_SIZE> bytes;
-	inline static boost::circular_buffer<unsigned char> cb{ 256 };
+	inline static boost::circular_buffer<unsigned char> cb{ 512 };
 	using thing = std::function<void(void)>;
 	using uchar = unsigned char;
 public:
@@ -491,27 +449,44 @@ public:
 
 		};
 
+
+		auto fnEatTillHeader = [&](bool printit=false) {
+			int i = 0;
+			
+			if(printit)
+				printf(GREEN_DEF "before while:\t\t%x %x %x %x %x %x %x %x %x %x | %x %x %x\n" RESET_DEF, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9], cb[10], cb[11], cb[12]);
+
+			
+			while (cb[0] != 0x55) {
+				//SG2("NOT header, cb.size:", cb.size())
+				//_RPT2(0, "not 55, pop:%x,%x", cb[0], cb.front());
+			//	SGUP_ODSA("dump:",(int)cb[0], (int)cb[1], (int)cb[2], (int)cb[3], (int)cb[4], (int)cb[5], (int)cb[6], (int)cb[7], (int)cb[8], (int)cb[9]);
+				//printf("about pop (0-9):%x %x %x %x %x %x %x %x %x\n", cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+				cb.pop_front(); //throw away, remaining 10
+				if(printit)
+					printf("just popped (0-9):"  GREEN_DEF "%x " RESET_DEF "%x %x %x %x %x %x %x %x\n", cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+				i++;
+				//	if (cb.empty()) { return; }
+				//	ak;
+
+			}
+
+			return i;
+
+
+		};
+
 		std::map<uchar, thing> typeSwitcher = { {0x52,fnAngVelocity},{0x53,fnAngles},{0x51,fnAccel} };
 
 	//	cout << "!" << endl;
 
-
-		while (cb[0] != 0x55 ) {
-			//SG2("NOT header, cb.size:", cb.size())
-
-			//_RPT2(0, "not 55, pop:%x,%x", cb[0], cb.front());
-		//	SGUP_ODSA("dump:",(int)cb[0], (int)cb[1], (int)cb[2], (int)cb[3], (int)cb[4], (int)cb[5], (int)cb[6], (int)cb[7], (int)cb[8], (int)cb[9]);
+		printf(AQUABAR_BOLDWHITE_DEF "START:\t%x %x %x %x %x %x %x %x %x %x %x %x\n" RESET_DEF,  cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9], cb[10],cb[11]);
 
 
-			printf("about pop (0-9):%x %x %x %x %x %x %x %x %x\n", cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
-			cb.pop_front(); //throw away, remaining 10
-			printf("just popped (0-9):%x %x %x %x %x %x %x %x %x\n", cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
-
-			if (cb.empty()) { return; }
-			
-	//		break;
-
-		}
+		if (cb[0] != 0x55)//if we just started or we don't have the begging of frame at head of q eat until we do.  This should execute rarely.
+			fnEatTillHeader(true);
+		else
+			printf(INVERSEYELLOW_DEF "HEADER SET CORRECTLY FROM PREVIOUS CALL!\n" RESET_DEF);
 
 		
 		cb.pop_front(); //get rid of the hessage header now, 0x55...
@@ -519,7 +494,7 @@ public:
 	//	SG2("found header");
 		if (cb.size() < 10) { cout << RED_DEF << "oh no, <10" << RESET_DEF << endl; return; } //in case we had a bunch of inbetween data and a header wasn't found
 
-		printf(GREEN_DEF "data!:%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+		//printf(GREEN_DEF "data:\t\t%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
 
 		
 		//what type of message is this? 
@@ -529,13 +504,13 @@ public:
 		cb.pop_front(); //get rid of typ descripter, **9** left before next header, which we want to leave in front of the cb
 
 		if (typeSwitcher.find(typ) != typeSwitcher.end()) {
-			printf(YELLOW_DEF "%x\n" RESET_DEF, typ);
-			for (int i = 1; i<=9; i++) {
-				cb.pop_front(); cout << "popi(" << i << ") ";
-			}
-			cout << endl;
+			//printf(YELLOW_DEF "%x\n" RESET_DEF, typ);
+			printf(YELLOW_DEF "%x:TYPE SWITCH:\t%x %x %x %x %x %x %x %x %x %x || %x\n" RESET_DEF,typ, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9], cb[10]);
 
-			printf(INVERSEMAJ_DEF "TOP CB:%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+			auto n = fnEatTillHeader(false);
+			printf(RED_DEF"%d\n" RESET_DEF,n);
+			
+			printf(INVERSEMAJ_DEF "PASS ON:\t\t%x %x %x %x %x %x %x %x %x %x || %x %x\n" RESET_DEF, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9], cb[10], cb[11]);
 			
 		//	typeSwitcher[typ]();
 		}
@@ -559,9 +534,20 @@ public:
 			//	);
 			port->async_read_some(buffer(bytes), read_callback);
 			//cout << "reading:" << bytes_transferred << endl;
-			//std::copy(begin(newElements), end(newElements), std::back_inserter(v));
 			//cb.push_back(bytes.begin(), bytes.end());
-			cb.insert(cb.end(), bytes.begin(), bytes.end());
+			
+
+			printf(BLUEBAR_BOLDWHITE_DEF "%d %d:before inserted:\t%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, bytes_transferred, this_thread::get_id(), cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+			//cb.insert(cb.begin(), bytes.begin(), bytes.end());
+			//std::copy(begin(bytes), end(bytes), std::front_inserter(cb));
+			for (int i = 0; i < bytes_transferred; i++)
+			{
+				cb.push_back(bytes[i]);
+			}
+
+			printf(BLUEBAR_BOLDWHITE_DEF "after inserted:\t\t%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+
+
 			interpretReadings();
 
 			
@@ -620,7 +606,7 @@ int main(int argc, const char * argv[]) {
 	//return 0;
 
 	cout << "starting..." << endl;
-	SPBoost sp("COM8", READ_SIZE);
+	SPBoost sp("COM6", READ_SIZE);
 
 
 	return 0;
