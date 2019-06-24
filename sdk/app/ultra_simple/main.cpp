@@ -312,7 +312,7 @@ class SPBoost {
 	inline static boost::asio::serial_port * port=nullptr;// (io);
 	inline static std::size_t bytesTransferred;
 	inline static std::array<unsigned char, READ_SIZE> bytes;
-	inline static boost::circular_buffer<unsigned char> cb{ 512 };
+	inline static boost::circular_buffer<unsigned char> cb{ 1024 };
 	using thing = std::function<void(void)>;
 	using uchar = unsigned char;
 public:
@@ -479,8 +479,14 @@ public:
 		std::map<uchar, thing> typeSwitcher = { {0x52,fnAngVelocity},{0x53,fnAngles},{0x51,fnAccel} };
 
 	//	cout << "!" << endl;
+	again:
 
-		printf(AQUABAR_BOLDWHITE_DEF "START:\t%x %x %x %x %x %x %x %x %x %x %x %x\n" RESET_DEF,  cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9], cb[10],cb[11]);
+		if (cb.size() <= 11) {
+			cout << RED_DEF << "oh no, <10,lets let the q refill are are ahead now" << RESET_DEF << endl;
+			return;
+		}
+
+		printf(AQUABAR_BOLDWHITE_DEF "%x|START:\t%x %x %x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, this_thread::get_id(),  cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9], cb[10],cb[11]);
 
 
 		if (cb[0] != 0x55)//if we just started or we don't have the begging of frame at head of q eat until we do.  This should execute rarely.
@@ -492,7 +498,7 @@ public:
 		cb.pop_front(); //get rid of the hessage header now, 0x55...
 
 	//	SG2("found header");
-		if (cb.size() < 10) { cout << RED_DEF << "oh no, <10" << RESET_DEF << endl; return; } //in case we had a bunch of inbetween data and a header wasn't found
+		//if (cb.size() < 10) { cout << RED_DEF << "oh no, <10" << RESET_DEF << endl; return; } //in case we had a bunch of inbetween data and a header wasn't found
 
 		//printf(GREEN_DEF "data:\t\t%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
 
@@ -520,7 +526,7 @@ public:
 		}
 		//	_RPT1(0, "message?:%x", typ);
 			
-
+		goto again;
 
 	}
 
@@ -537,14 +543,15 @@ public:
 			//cb.push_back(bytes.begin(), bytes.end());
 			
 
-			printf(BLUEBAR_BOLDWHITE_DEF "%d %d:before inserted:\t%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, bytes_transferred, this_thread::get_id(), cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
+			printf(BLUEBAR_BOLDWHITE_DEF "TX:%d |%x|:before inserted:\t%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, bytes_transferred, this_thread::get_id(), cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
 			//cb.insert(cb.begin(), bytes.begin(), bytes.end());
 			//std::copy(begin(bytes), end(bytes), std::front_inserter(cb));
 			for (int i = 0; i < bytes_transferred; i++)
 			{
+				//printf("%x ", bytes[i]);
 				cb.push_back(bytes[i]);
 			}
-
+			cout << endl;
 			printf(BLUEBAR_BOLDWHITE_DEF "after inserted:\t\t%x %x %x %x %x %x %x %x %x %x\n" RESET_DEF, cb[0], cb[1], cb[2], cb[3], cb[4], cb[5], cb[6], cb[7], cb[8], cb[9]);
 
 
@@ -605,8 +612,10 @@ int main(int argc, const char * argv[]) {
 //	cout << x << endl;
 	//return 0;
 
+
+
 	cout << "starting..." << endl;
-	SPBoost sp("COM6", READ_SIZE);
+	SPBoost sp("COM9", READ_SIZE);
 
 
 	return 0;
