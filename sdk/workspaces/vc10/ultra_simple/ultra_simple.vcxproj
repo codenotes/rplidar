@@ -173,6 +173,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\app\ultra_simple\RplidarClass.h" />
+    <ClInclude Include="..\..\..\app\ultra_simple\WITReader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\app\ultra_simple\RPlidarNeedfullsForDLL" />
