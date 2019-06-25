@@ -45,7 +45,7 @@ static inline void delay(_word_size_t ms){
 }
 #endif
 //using rp::standalone::rplidar;
-#include "WITReader.h"
+#include "c:/usr/include/WIT/WITReader.h"
 
 #if 0
 bool checkRPLIDARHealth(rp::standalone::rplidar::RPlidarDriver * drv)
@@ -307,13 +307,13 @@ void DecodeIMUData(unsigned char chrTemp[])
 
 
 
-void Angles(SPBoost::Angles & a) {
+void Angles(WITAsio::Angles & a) {
 	using namespace std;
 
 	//cout << CURSOR_SAVE;
 
 	cout << boost::format("\033[%1%;%2%H") % 5 % 70;
-	printf(BOLDBLUE_DEF "%4.2f %4.2f %4.2f" RESET_DEF,  a.roll, a.pitch, a.yaw);
+	printf(BOLDBLUE_DEF "%4.2f\t%4.2f\t%4.2f\t" RESET_DEF,  a.roll, a.pitch, a.yaw);
 
 	//cout << CURSOR_RESTORE;
 }
@@ -330,7 +330,7 @@ int main(int argc, const char * argv[]) {
 	//office big machine is COM8
 
 	cout << "starting..." << endl;
-	SPBoost sp("COM8", READ_SIZE);
+	WITAsio sp("COM8", READ_SIZE);
 	sp.cbAngles = Angles;
 	sp.run();
 
