@@ -332,7 +332,12 @@ int main(int argc, const char * argv[]) {
 	cout << "starting..." << endl;
 	WITAsio sp("COM8", READ_SIZE);
 	sp.cbAngles = Angles;
-	sp.run();
+	//sp.run();
+
+	auto t = sp.runThreaded();
+	int x;
+	cin >> x;
+	t->interrupt();
 
 	return 0;
 
