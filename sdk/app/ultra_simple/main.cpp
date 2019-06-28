@@ -318,6 +318,23 @@ void Angles(WITAsio::Angles & a) {
 	//cout << CURSOR_RESTORE;
 }
 
+
+template <typename T>
+void WITAsio::fillNine(T & st)
+{
+	
+	//AngVelocity.begin();
+	boost::fusion::for_each(st, [&](T current) {});
+
+	/*{
+		cb.front(); cb.pop_front();
+
+	
+		
+	});*/
+
+}
+
 int main(int argc, const char * argv[]) {
 
 
@@ -328,6 +345,9 @@ int main(int argc, const char * argv[]) {
 
 	//living room apple seems to be com9
 	//office big machine is COM8
+	WITAsio::AngVelocity av;
+	WITAsio::fillNine(av);
+
 
 	cout << "starting..." << endl;
 	WITAsio sp("COM8", READ_SIZE);
