@@ -306,7 +306,7 @@ void DecodeIMUData(unsigned char chrTemp[])
 }
 
 
-
+//this prints out the good stuff
 void Angles(WITAsio::Angles & a) {
 	using namespace std;
 
@@ -318,15 +318,26 @@ void Angles(WITAsio::Angles & a) {
 	//cout << CURSOR_RESTORE;
 }
 
-void crap() {
-	WITAsio sp("COM8", READ_SIZE);
-	sp.cbAngles = Angles;
-	//sp.run();
+void testWIT() {
+	using namespace std;
 
-	auto t = sp.runThreaded();
-	int x;
-	cin >> x;
-	t->interrupt();
+	auto p = rp::RplidarProxy::findRplidarComPort("CH340");
+
+	if (p) {
+
+		cout << YELLOW_DEF << "found:" << *p << RESET_DEF << endl;
+		WITAsio sp(*p, READ_SIZE);
+		sp.cbAngles = Angles;
+		//sp.run();
+
+		auto t = sp.runThreaded();
+		int x;
+		std::cin >> x;
+		t->interrupt();
+	}
+	else {
+		cout << "could not find serial!" << endl;
+	}
 
 	
 }
@@ -413,6 +424,7 @@ int main(int argc, const char * argv[]) {
 
 	cout << "starting..." << endl;
 
+
 	   
 
 
@@ -424,9 +436,10 @@ int main(int argc, const char * argv[]) {
 	RP_INIT_DLL_FUNCTIONS(h);
 
 
-
-	test1();
+	testWIT();
 	return 0;
+	
+
 
 	rp::ROSArgs args;
 	std::string s;
