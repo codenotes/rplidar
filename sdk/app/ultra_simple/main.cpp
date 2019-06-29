@@ -318,21 +318,85 @@ void Angles(WITAsio::Angles & a) {
 	//cout << CURSOR_RESTORE;
 }
 
+void crap() {
+	WITAsio sp("COM8", READ_SIZE);
+	sp.cbAngles = Angles;
+	//sp.run();
 
-template <typename T>
-void WITAsio::fillNine(T & st)
-{
+	auto t = sp.runThreaded();
+	int x;
+	cin >> x;
+	t->interrupt();
+
 	
-	//AngVelocity.begin();
-	boost::fusion::for_each(st, [&](T current) {});
+}
 
-	/*{
-		cb.front(); cb.pop_front();
+void test1() {
 
-	
+
+	//USB-SERIAL CH340
+
+	auto p= rp::RplidarProxy::findRplidarComPort("Silicon");
+	if (p) {
+		cout << *p << endl;
+	}
+	else
+		cout << "not found" << endl;
+}
+
+
+
+
+void test2() {
+	rp::RplidarProxy::wmiReportType *p;
+
+	rp::RplidarProxy::fnGetComPortLidar(&p);
+
+	std::for_each(p->begin(), p->end(), [&](auto & pr) { cout << pr.first <<","<< pr.second << endl; });
+
+	for (auto &port : *p)
+	{
+
+		auto drv = port.first; //useless
+		auto desc = port.second;
 		
-	});*/
 
+		if (desc.find("CH340") != std::string::npos) {
+
+
+		
+			std::regex rgx(R"(\((.*?)\))");
+			std::smatch match;
+
+			if (std::regex_search(desc, match, rgx)) {
+
+//				return match.str(1);
+//				cout << YELLOW_DEF <<match.size()<< "!" <<match.str(1)<< RESET_DEF << endl;
+
+			}
+
+		}
+		else
+		{
+	//		return std::nullopt;
+		}
+
+
+	}
+
+
+
+	//auto sil = rp::RplidarProxy::findRplidarComPort();
+
+
+	//if (sil)
+	//{
+	//	cout << "found!"<<*sil << endl;
+
+	//}
+	//else {
+	//	cout << "did not find sil" << endl;
+	//}
 }
 
 int main(int argc, const char * argv[]) {
@@ -345,21 +409,11 @@ int main(int argc, const char * argv[]) {
 
 	//living room apple seems to be com9
 	//office big machine is COM8
-	WITAsio::AngVelocity av;
-	WITAsio::fillNine(av);
 
 
 	cout << "starting..." << endl;
-	WITAsio sp("COM8", READ_SIZE);
-	sp.cbAngles = Angles;
-	//sp.run();
 
-	auto t = sp.runThreaded();
-	int x;
-	cin >> x;
-	t->interrupt();
-
-	return 0;
+	   
 
 
 #ifdef _DEBUG
@@ -368,6 +422,11 @@ int main(int argc, const char * argv[]) {
 	HMODULE h = LoadLibraryA(R"(C:\repos\lidar\rplidar_sdk\sdk\workspaces\vc10\x64\Release\rplidarReader.dll)");
 #endif
 	RP_INIT_DLL_FUNCTIONS(h);
+
+
+
+	test1();
+	return 0;
 
 	rp::ROSArgs args;
 	std::string s;

@@ -156,7 +156,8 @@ extern "C"
 		hres = pSvc->ExecQuery(
 			bstr_t("WQL"),
 			//bstr_t("SELECT * FROM Win32_OperatingSystem"),
-			bstr_t("Select * from Win32_SerialPort"),
+			//bstr_t("Select * from Win32_SerialPort"), //does not return complete set
+			bstr_t("SELECT * FROM Win32_PnPEntity WHERE ClassGuid = \"{4d36e978-e325-11ce-bfc1-08002be10318}\""),
 			WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
 			NULL,
 			&pEnumerator);
