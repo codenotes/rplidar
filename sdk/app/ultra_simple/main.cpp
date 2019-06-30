@@ -318,7 +318,7 @@ void Angles(WITAsio::Angles & a) {
 	//cout << CURSOR_RESTORE;
 }
 
-void testWIT() {
+void launchWIT() {
 	using namespace std;
 
 	auto p = rp::RplidarProxy::findRplidarComPort("CH340");
@@ -330,16 +330,24 @@ void testWIT() {
 		sp.cbAngles = Angles;
 		//sp.run();
 
-		auto t = sp.runThreaded();
-		int x;
-		std::cin >> x;
-		t->interrupt();
+		sp.runThreaded();
+	
+		
 	}
 	else {
 		cout << "could not find serial!" << endl;
 	}
 
 	
+}
+
+
+void stopWIT() {
+
+	int x;
+	std::cin >> x;
+	
+	WITAsio::interrupt();
 }
 
 void test1() {
@@ -436,7 +444,8 @@ int main(int argc, const char * argv[]) {
 	RP_INIT_DLL_FUNCTIONS(h);
 
 
-	testWIT();
+	launchWIT();
+	stopWIT();
 	return 0;
 	
 
