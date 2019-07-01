@@ -93,7 +93,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;RPLIDARREADER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);NOMINMAX;WIN32;DLL_EXPORT=__declspec(dllexport);NOMINMAX;WIN32</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\sdk\src;..\..\..\sdk\include;..\..\..\app\simple_grabber;C:\include\boost_1_68_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\sdk\src;..\..\..\sdk\include;..\..\..\app\simple_grabber;C:\include\boost_1_68_0\;%(AdditionalIncludeDirectories);C:\repos\lidar\rplidar_sdk\sdk\app\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4244;4996</DisableSpecificWarnings>
@@ -149,7 +149,7 @@
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;RPLIDARREADER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);DLL_EXPORT=__declspec(dllexport);NOMINMAX;WIN32</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\sdk\src;..\..\..\sdk\include;..\..\..\app\simple_grabber;C:\include\boost_1_68_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\sdk\src;..\..\..\sdk\include;..\..\..\app\simple_grabber;C:\include\boost_1_68_0\;%(AdditionalIncludeDirectories);C:\repos\lidar\rplidar_sdk\sdk\app\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4244;4996</DisableSpecificWarnings>
