@@ -342,6 +342,37 @@ void launchWIT() {
 }
 
 
+WITAsio * sp_ws = nullptr;
+
+void launchWIT2(std::string com="") {
+	using namespace std;
+	std::optional<std::string> p;
+
+	if (com.empty())
+		p = rp::RplidarProxy::findRplidarComPort("CH340");
+	else {
+		p = com;
+		cout << "opening:" << *p << endl;
+
+	}
+
+	if (p) {
+
+		//SGUP_ROS_INFO(__FUNCTION__, "com:", comWIT);
+		try {
+			sp_ws = new WITAsio(*p);
+			sp_ws->cbAngles = Angles;
+			sp_ws->runThreaded();
+		}
+		catch (std::exception &e) {
+			cout << e.what() << endl;
+			//SGUP_ROS_ERROR(e.what());
+		}
+	}
+
+}
+
+
 void stopWIT() {
 
 	int x;
@@ -444,7 +475,7 @@ int main(int argc, const char * argv[]) {
 	RP_INIT_DLL_FUNCTIONS(h);
 
 
-	launchWIT();
+	launchWIT2("COM8");
 	stopWIT();
 	return 0;
 	
